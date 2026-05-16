@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="StratAI — Autonomous Strategic Intelligence Platform for Enterprise Decision-Making" />
+    <title>StratAI Command Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg-base:        #0a0a0c;
+        --bg-surface:     #111116;
+        --bg-panel:       #0d0d11;
+        --bg-raised:      #16161e;
+        --bg-hover:       #1c1c26;
+        --border-dim:     rgba(255,255,255,0.045);
+        --border-std:     rgba(255,255,255,0.07);
+        --border-accent:  rgba(82,138,220,0.18);
+        --border-focus:   rgba(82,138,220,0.35);
+        --text-primary:   #d8dce6;
+        --text-secondary: #858a99;
+        --text-muted:     #505566;
+        --text-micro:     #3c4052;
+        --accent:         #528adc;
+        --accent-dim:     rgba(82,138,220,0.12);
+        --accent-bright:  #7aabf5;
+        --success:        #27a663;
+        --success-dim:    rgba(39,166,99,0.12);
+        --warning:        #c9882a;
+        --warning-dim:    rgba(201,136,42,0.12);
+        --critical:       #c0392b;
+        --critical-dim:   rgba(192,57,43,0.12);
+        --mono: 'IBM Plex Mono', monospace;
+        --sans: 'IBM Plex Sans', system-ui, sans-serif;
+      }
+
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { font-size: 13px; }
+      body {
+        font-family: var(--sans);
+        background: var(--bg-base);
+        color: var(--text-primary);
+        -webkit-font-smoothing: antialiased;
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* scanline texture */
+      body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0,0,0,0.06) 2px,
+          rgba(0,0,0,0.06) 3px
+        );
+        pointer-events: none;
+        z-index: 9999;
+      }
+
+      a { color: inherit; text-decoration: none; }
+
+      /* ── SIDEBAR ───────────────────────────────── */
+      .sidebar {
+        width: 220px;
+        background: var(--bg-surface);
+        border-right: 1px solid var(--border-dim);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        overflow-y: auto;
+      }
+
+      .sidebar-header {
+        padding: 1.1rem 1rem;
+        border-bottom: 1px solid var(--border-dim);
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+
+      .logo-mark {
+        width: 22px;
+        height: 22px;
+        background: var(--accent);
+        clip-path: polygon(50% 0%, 100% 28%, 100% 72%, 50% 100%, 0% 72%, 0% 28%);
+        flex-shrink: 0;
+      }
+
+      .logo-text {
+        font-family: var(--mono);
+        font-weight: 600;
+        font-size: 0.9rem;
+        letter-spacing: 0.1em;
+        color: var(--text-primary);
+      }
+
+      .logo-version {
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        color: var(--text-muted);
+        margin-left: auto;
+      }
+
+      .nav-group {
+        padding: 0.75rem 0;
+      }
+
+      .nav-group-label {
+        font-family: var(--mono);
+        font-size: 0.55rem;
+        letter-spacing: 0.15em;
+        color: var(--text-micro);
+        text-transform: uppercase;
+        padding: 0.25rem 1rem 0.5rem;
+      }
+
+      .nav-item {
+        padding: 0.55rem 1rem;
+        font-size: 0.8rem;
+        font-weight: 400;
+        color: var(--text-secondary);
+        border-left: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.1s;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        user-select: none;
+      }
+
+      .nav-item:hover {
+        color: var(--text-primary);
+        background: var(--bg-hover);
+        border-left-color: var(--text-muted);
+      }
+
+      .nav-item.active {
+        color: var(--accent-bright);
+        background: var(--accent-dim);
+        border-left-color: var(--accent);
+        font-weight: 500;
+      }
+
+      .nav-item .nav-badge {
+        margin-left: auto;
+        background: var(--critical-dim);
+        color: var(--critical);
+        border-radius: 2px;
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        padding: 0.1rem 0.35rem;
+        font-weight: 600;
+      }
+
+      .nav-item .nav-badge.ok {
+        background: var(--success-dim);
+        color: var(--success);
+      }
+
+      .sidebar-divider {
+        height: 1px;
+        background: var(--border-dim);
+        margin: 0.25rem 0;
+      }
+
+      .sidebar-footer {
+        margin-top: auto;
+        padding: 0.75rem 1rem;
+        border-top: 1px solid var(--border-dim);
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        font-family: var(--mono);
+        line-height: 1.8;
+      }
+
+      .footer-org {
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+
+      /* ── TOP BAR ───────────────────────────────── */
+      .topbar {
+        position: fixed;
+        top: 0;
+        left: 220px;
+        right: 0;
+        height: 48px;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-dim);
+        display: flex;
+        align-items: center;
+        padding: 0 1.5rem;
+        gap: 1.5rem;
+        z-index: 100;
+      }
+
+      .topbar-chip {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        padding: 0.25rem 0.6rem;
+        border: 1px solid var(--border-dim);
+        border-radius: 2px;
+        background: var(--bg-panel);
+      }
+
+      .pulse-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--success);
+        animation: blink 2.4s ease-in-out infinite;
+      }
+
+      .pulse-dot.warn { background: var(--warning); }
+      .pulse-dot.crit { background: var(--critical); animation-duration: 0.9s; }
+
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+      }
+
+      .topbar-sep {
+        width: 1px;
+        height: 20px;
+        background: var(--border-dim);
+      }
+
+      .topbar-time {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        letter-spacing: 0.04em;
+      }
+
+      .topbar-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .btn {
+        padding: 0.35rem 0.85rem;
+        font-family: var(--sans);
+        font-size: 0.75rem;
+        font-weight: 500;
+        border-radius: 2px;
+        cursor: pointer;
+        transition: all 0.15s;
+        letter-spacing: 0.02em;
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+        border: 1px solid transparent;
+      }
+
+      .btn-primary:hover {
+        background: var(--accent-bright);
+        box-shadow: 0 0 10px rgba(82,138,220,0.2);
+      }
+
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid var(--border-std);
+      }
+
+      .btn-ghost:hover {
+        color: var(--text-primary);
+        border-color: var(--border-accent);
+        background: var(--accent-dim);
+      }
+
+      /* ── LAYOUT ────────────────────────────────── */
+      .main-container {
+        display: flex;
+        flex: 1;
+        margin-top: 48px;
+        overflow: hidden;
+        min-width: 0;
+      }
+
+      .content-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        min-width: 0;
+      }
+
+      .right-panel {
+        width: 260px;
+        background: var(--bg-surface);
+        border-left: 1px solid var(--border-dim);
+        overflow-y: auto;
+        flex-shrink: 0;
+        padding: 1.25rem;
+      }
+
+      /* ── INTEL TICKER ──────────────────────────── */
+      .intel-ticker {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-dim);
+        border-left: 2px solid var(--critical);
+        border-radius: 2px;
+        padding: 0.45rem 0.85rem;
+        margin-bottom: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        overflow: hidden;
+      }
+
+      .ticker-label {
+        font-family: var(--mono);
+        font-size: 0.55rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        color: var(--critical);
+        white-space: nowrap;
+        text-transform: uppercase;
+      }
+
+      .ticker-sep { width: 1px; height: 12px; background: var(--border-std); flex-shrink: 0; }
+
+      .ticker-items {
+        display: flex;
+        gap: 1.5rem;
+        overflow: hidden;
+        flex: 1;
+      }
+
+      .ticker-item {
+        font-family: var(--mono);
+        font-size: 0.65rem;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      .ticker-item .ti-key {
+        color: var(--text-muted);
+        font-size: 0.6rem;
+      }
+
+      .ticker-item .ti-val { color: var(--text-primary); }
+      .ticker-item .ti-val.up   { color: var(--success); }
+      .ticker-item .ti-val.down { color: var(--critical); }
+      .ticker-item .ti-val.warn { color: var(--warning); }
+
+      /* ── HERO ──────────────────────────────────── */
+      .hero {
+        margin-bottom: 1.25rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-dim);
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 1.5rem;
+        align-items: start;
+      }
+
+      .hero-left {}
+
+      .hero-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.45rem;
+      }
+
+      .hero-eyebrow {
+        font-family: var(--mono);
+        font-size: 0.58rem;
+        letter-spacing: 0.14em;
+        color: var(--accent);
+        text-transform: uppercase;
+      }
+
+      .hero-meta-divider { width: 1px; height: 10px; background: var(--border-std); }
+
+      .hero-session {
+        font-family: var(--mono);
+        font-size: 0.58rem;
+        color: var(--text-muted);
+      }
+
+      .hero-headline {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        letter-spacing: -0.025em;
+        margin-bottom: 0.3rem;
+        line-height: 1.2;
+      }
+
+      .hero-sub {
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+        line-height: 1.55;
+        max-width: 520px;
+        font-weight: 300;
+      }
+
+      .hero-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.85rem;
+      }
+
+      .hero-right {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        min-width: 160px;
+      }
+
+      .hero-stat {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-dim);
+        border-radius: 2px;
+        padding: 0.5rem 0.75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+
+      .hero-stat-label {
+        font-family: var(--mono);
+        font-size: 0.58rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .hero-stat-val {
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        font-weight: 600;
+      }
+
+      .hero-stat-val.ok   { color: var(--success); }
+      .hero-stat-val.warn { color: var(--warning); }
+      .hero-stat-val.crit { color: var(--critical); }
+
+      /* ── SECTION HEADER ────────────────────────── */
+      .section-hd {
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .section-hd::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border-dim);
+      }
+
+      /* ── KPI ROW ───────────────────────────────── */
+      .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.6rem;
+        margin-bottom: 1.25rem;
+      }
+
+      .kpi {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-dim);
+        border-radius: 3px;
+        padding: 0.8rem 0.9rem 0.7rem;
+        position: relative;
+        overflow: hidden;
+        transition: border-color 0.15s;
+      }
+
+      .kpi::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 2px;
+        background: transparent;
+      }
+
+      .kpi.crit::before { background: var(--critical); }
+      .kpi.warn::before { background: var(--warning); }
+      .kpi.ok::before   { background: var(--success); }
+      .kpi.info::before { background: var(--accent); }
+
+      .kpi:hover { border-color: var(--border-std); }
+
+      .kpi-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.45rem;
+      }
+
+      .kpi-label {
+        font-family: var(--mono);
+        font-size: 0.56rem;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+        text-transform: uppercase;
+      }
+
+      .kpi-source {
+        font-family: var(--mono);
+        font-size: 0.52rem;
+        color: var(--text-micro);
+        letter-spacing: 0.04em;
+      }
+
+      .kpi-value {
+        font-family: var(--mono);
+        font-size: 1.6rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        letter-spacing: -0.03em;
+        line-height: 1;
+        margin-bottom: 0.3rem;
+      }
+
+      .kpi-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+
+      .kpi-delta {
+        font-size: 0.65rem;
+        font-family: var(--mono);
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+
+      .kpi-delta.up   { color: var(--success); }
+      .kpi-delta.down { color: var(--critical); }
+      .kpi-delta.neut { color: var(--text-muted); }
+
+      .kpi-conf {
+        font-family: var(--mono);
+        font-size: 0.52rem;
+        color: var(--text-micro);
+      }
+
+      .kpi-bar-wrap {
+        margin-top: 0.5rem;
+        height: 2px;
+        background: var(--bg-base);
+        border-radius: 1px;
+        overflow: hidden;
+      }
+
+      .kpi-bar { height: 100%; border-radius: 1px; }
+      .kpi-bar.ok   { background: var(--success); }
+      .kpi-bar.warn { background: var(--warning); }
+      .kpi-bar.crit { background: var(--critical); }
+      .kpi-bar.info { background: var(--accent); }
+
+      /* ── ALERTS ────────────────────────────────── */
+      .alerts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        margin-bottom: 1.25rem;
+      }
+
+      .alert-row {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-dim);
+        border-radius: 3px;
+        padding: 0.65rem 0.85rem;
+        display: grid;
+        grid-template-columns: 3px 1fr auto;
+        gap: 0.7rem;
+        align-items: start;
+        transition: border-color 0.15s;
+      }
+
+      .alert-row:hover { border-color: var(--border-std); }
+
+      .alert-row.flash-crit {
+        border-color: rgba(192,57,43,0.25);
+      }
+
+      .alert-stripe {
+        width: 3px;
+        border-radius: 2px;
+        align-self: stretch;
+      }
+
+      .alert-stripe.crit { background: var(--critical); }
+      .alert-stripe.warn { background: var(--warning); }
+      .alert-stripe.info { background: var(--accent); }
+
+      .alert-body { min-width: 0; }
+
+      .alert-head {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        margin-bottom: 0.2rem;
+        flex-wrap: wrap;
+      }
+
+      .alert-title {
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+
+      .alert-source {
+        font-family: var(--mono);
+        font-size: 0.56rem;
+        color: var(--text-muted);
+        letter-spacing: 0.04em;
+      }
+
+      .alert-desc {
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+      }
+
+      .alert-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.35rem;
+        flex-shrink: 0;
+      }
+
+      .alert-meta {
+        font-family: var(--mono);
+        font-size: 0.58rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+      }
+
+      .alert-action {
+        font-family: var(--mono);
+        font-size: 0.56rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: var(--accent-bright);
+        cursor: pointer;
+        border: 1px solid var(--border-accent);
+        border-radius: 2px;
+        padding: 0.1rem 0.4rem;
+        background: var(--accent-dim);
+        white-space: nowrap;
+        transition: all 0.1s;
+      }
+
+      .alert-action:hover { background: rgba(82,138,220,0.2); }
+
+      .severity-tag {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 0.52rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        padding: 0.08rem 0.3rem;
+        border-radius: 2px;
+      }
+
+      .severity-tag.crit { background: var(--critical-dim); color: var(--critical); }
+      .severity-tag.warn { background: var(--warning-dim);  color: var(--warning); }
+      .severity-tag.info { background: var(--accent-dim);   color: var(--accent-bright); }
+
+      /* ── DUAL PANEL (risk + sim) ───────────────── */
+      .dual-panel {
+        display: grid;
+        grid-template-columns: 1fr 1.6fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .panel-box {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-dim);
+        border-radius: 3px;
+        padding: 1rem;
+        transition: border-color 0.15s;
+      }
+
+      .panel-box:hover { border-color: var(--border-std); }
+
+      /* RISK MATRIX */
+      .risk-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4rem;
+        margin-top: 0.75rem;
+      }
+
+      .risk-cell {
+        background: var(--bg-raised);
+        border: 1px solid var(--border-dim);
+        border-radius: 2px;
+        padding: 0.55rem 0.6rem;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.72rem;
+        font-family: var(--mono);
+      }
+
+      .risk-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .risk-dot.low  { background: var(--success); }
+      .risk-dot.med  { background: var(--warning); }
+      .risk-dot.high { background: var(--critical); }
+
+      .risk-label { color: var(--text-secondary); flex: 1; }
+
+      .risk-level {
+        font-size: 0.6rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+      }
+
+      .risk-level.low  { color: var(--success); }
+      .risk-level.med  { color: var(--warning); }
+      .risk-level.high { color: var(--critical); }
+
+      /* SIMULATION */
+      .sim-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: var(--mono);
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+        color: var(--accent-bright);
+        margin-bottom: 0.85rem;
+      }
+
+      .scenarios-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 0.5rem;
+      }
+
+      .scenario {
+        background: var(--bg-raised);
+        border: 1px solid var(--border-dim);
+        border-radius: 2px;
+        padding: 0.7rem 0.75rem;
+        transition: border-color 0.15s;
+      }
+
+      .scenario:hover { border-color: var(--border-accent); }
+
+      .scenario-name {
+        font-size: 0.72rem;
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 1px solid var(--border-dim);
+      }
+
+      .scenario-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 0.25rem;
+      }
+
+      .s-label {
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        color: var(--text-muted);
+      }
+
+      .s-val {
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        font-weight: 500;
+        color: var(--accent-bright);
+      }
+
+      .s-val.neg { color: var(--critical); }
+      .s-val.ok  { color: var(--success); }
+
+      .prob-bar-wrap {
+        margin-top: 0.5rem;
+        background: var(--bg-base);
+        border-radius: 1px;
+        height: 3px;
+        overflow: hidden;
+      }
+
+      .prob-bar {
+        height: 100%;
+        border-radius: 1px;
+        background: var(--accent);
+      }
+
+      /* ── COMMAND LOG ───────────────────────────── */
+      .log-panel {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-dim);
+        border-radius: 3px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        transition: border-color 0.15s;
+      }
+
+      .log-panel:hover { border-color: var(--border-std); }
+
+      .log-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.72rem;
+      }
+
+      .log-table tr {
+        border-bottom: 1px solid var(--border-dim);
+        transition: background 0.1s;
+      }
+
+      .log-table tr:last-child { border-bottom: none; }
+
+      .log-table tr:hover { background: var(--bg-hover); }
+
+      .log-table td {
+        padding: 0.5rem 0.4rem;
+        vertical-align: top;
+      }
+
+      .log-ts {
+        font-family: var(--mono);
+        color: var(--text-muted);
+        white-space: nowrap;
+        width: 52px;
+        font-size: 0.65rem;
+        padding-right: 0.75rem !important;
+      }
+
+      .log-agent {
+        font-family: var(--mono);
+        width: 80px;
+        white-space: nowrap;
+      }
+
+      .log-agent span {
+        display: inline-block;
+        font-size: 0.6rem;
+        padding: 0.1rem 0.35rem;
+        border-radius: 2px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+      }
+
+      .log-agent .a-risk     { background: var(--critical-dim); color: var(--critical); }
+      .log-agent .a-strategy { background: var(--accent-dim);   color: var(--accent-bright); }
+      .log-agent .a-content  { background: var(--warning-dim);  color: var(--warning); }
+      .log-agent .a-anomaly  { background: var(--critical-dim); color: var(--critical); }
+      .log-agent .a-analytics{ background: var(--success-dim);  color: var(--success); }
+      .log-agent .a-system   { background: rgba(255,255,255,0.05); color: var(--text-muted); }
+
+      .log-msg { color: var(--text-secondary); line-height: 1.45; }
+
+      /* ── RIGHT PANEL ───────────────────────────── */
+      .rp-section { margin-bottom: 1.5rem; }
+
+      .rp-label {
+        font-family: var(--mono);
+        font-size: 0.55rem;
+        letter-spacing: 0.14em;
+        color: var(--text-micro);
+        text-transform: uppercase;
+        margin-bottom: 0.6rem;
+      }
+
+      .agent-row {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-dim);
+        border-radius: 2px;
+        padding: 0.6rem 0.75rem;
+        margin-bottom: 0.35rem;
+        transition: border-color 0.12s;
+      }
+
+      .agent-row:hover { border-color: var(--border-std); }
+
+      .agent-name-row {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        margin-bottom: 0.2rem;
+      }
+
+      .agent-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--success);
+        flex-shrink: 0;
+      }
+
+      .agent-name {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-primary);
+        flex: 1;
+      }
+
+      .agent-status {
+        font-family: var(--mono);
+        font-size: 0.62rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+        padding-left: 0.95rem;
+      }
+
+      .status-row {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-dim);
+        border-radius: 2px;
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 0.35rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .status-label {
+        font-size: 0.72rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      .status-val {
+        font-family: var(--mono);
+        font-size: 0.65rem;
+        color: var(--success);
+        font-weight: 500;
+      }
+
+      .action-item {
+        padding: 0.55rem 0;
+        border-bottom: 1px solid var(--border-dim);
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        line-height: 1.45;
+      }
+
+      .action-item:last-child { border-bottom: none; }
+
+      .action-verb {
+        font-family: var(--mono);
+        font-size: 0.62rem;
+        font-weight: 600;
+        color: var(--accent-bright);
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      /* scrollbar */
+      ::-webkit-scrollbar { width: 5px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.1); }
+
+      @media (max-width: 1300px) {
+        .right-panel { width: 230px; }
+        .kpi-row { grid-template-columns: repeat(2, 1fr); }
+        .dual-panel { grid-template-columns: 1fr; }
+        .scenarios-grid { grid-template-columns: 1fr 1fr; }
+      }
+
+      @media (max-width: 1024px) {
+        .right-panel { display: none; }
+        .sidebar { width: 200px; }
+        .topbar { left: 200px; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-mark"></div>
+        <span class="logo-text">StratAI</span>
+        <span class="logo-version">v2.4</span>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">Command</div>
+        <div class="nav-item active">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0L0 4v8l8 4 8-4V4L8 0zm0 1.5L14.5 5 8 8.5 1.5 5 8 1.5zM1 6.09l6.5 3.25V15L1 11.75V6.09zm8.5 3.25L16 6.09v5.66L9.5 15V9.34z"/></svg>
+          Overview
+        </div>
+        <div class="nav-item">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><circle cx="4" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="12" cy="4" r="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="12" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><line x1="6.2" y1="6.9" x2="9.8" y2="5.1" stroke="currentColor" stroke-width="1.1"/><line x1="6.2" y1="9.1" x2="9.8" y2="10.9" stroke="currentColor" stroke-width="1.1"/></svg>
+          Intelligence Agents
+          <span class="nav-badge ok">4/4</span>
+        </div>
+        <div class="nav-item">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L1 13h14L8 1zm0 2.3L13.1 12H2.9L8 3.3zM7.25 7v2.5h1.5V7h-1.5zm0 3.25v1.5h1.5v-1.5h-1.5z"/></svg>
+          Strategic Risks
+          <span class="nav-badge">3</span>
+        </div>
+        <div class="nav-item">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><polyline points="1,11 5,6 8,9 11,4 15,7"/></svg>
+          Forecasts
+        </div>
+        <div class="nav-item">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M5 8h2l2-4 2 8 1-4h1"/></svg>
+          Simulations
+        </div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">Reporting</div>
+        <div class="nav-item">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="1" width="10" height="14" rx="1"/><line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="8" y2="11"/></svg>
+          Executive Reports
+        </div>
+        <div class="nav-item">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2v5l3 2"/></svg>
+          Governance
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="footer-org">ACME CORP</div>
+        <div>Region: US-EAST-1</div>
+        <div>Clearance: L3</div>
+        <div style="margin-top:0.4rem; color: var(--text-micro);">© 2026 StratAI Platform</div>
+      </div>
+    </aside>
+
+    <!-- ── TOP BAR ── -->
+    <div class="topbar">
+      <div class="topbar-chip">
+        <div class="pulse-dot"></div>
+        OPERATIONAL
+      </div>
+      <div class="topbar-chip">
+        <div class="pulse-dot warn"></div>
+        3 CRITICAL ALERTS
+      </div>
+      <div class="topbar-sep"></div>
+      <div class="topbar-time" id="current-time">—</div>
+
+      <div class="topbar-right">
+        <button class="btn btn-ghost">View Simulation</button>
+        <button class="btn btn-primary">Launch Command Center</button>
+      </div>
+    </div>
+
+    <!-- ── MAIN ── -->
+    <div class="main-container">
+      <div class="content-area">
+
+        <!-- INTEL TICKER -->
+        <div class="intel-ticker">
+          <span class="ticker-label">Live Intel</span>
+          <div class="ticker-sep"></div>
+          <div class="ticker-items">
+            <div class="ticker-item">
+              <span class="ti-key">VIX</span>
+              <span class="ti-val down">↑ +34.2%</span>
+            </div>
+            <div class="ticker-sep" style="height:10px"></div>
+            <div class="ticker-item">
+              <span class="ti-key">THREAT INDEX</span>
+              <span class="ti-val warn">ELEVATED</span>
+            </div>
+            <div class="ticker-sep" style="height:10px"></div>
+            <div class="ticker-item">
+              <span class="ti-key">AGENTS ACTIVE</span>
+              <span class="ti-val up">4/4</span>
+            </div>
+            <div class="ticker-sep" style="height:10px"></div>
+            <div class="ticker-item">
+              <span class="ti-key">LAST SYNC</span>
+              <span class="ti-val">00:03 ago</span>
+            </div>
+            <div class="ticker-sep" style="height:10px"></div>
+            <div class="ticker-item">
+              <span class="ti-key">OPEN ACTIONS</span>
+              <span class="ti-val warn">3 PENDING</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- HERO -->
+        <div class="hero">
+          <div class="hero-left">
+            <div class="hero-meta">
+              <span class="hero-eyebrow">Command Center · Overview</span>
+              <div class="hero-meta-divider"></div>
+              <span class="hero-session" id="session-id">SESSION 4C-2026</span>
+            </div>
+            <h1 class="hero-headline">Autonomous Strategic Intelligence</h1>
+            <p class="hero-sub">AI agents coordinating across 47 risk vectors. Real-time anomaly detection, scenario simulation, and executive-grade forecasting — operational now.</p>
+            <div class="hero-actions">
+              <button class="btn btn-primary">Launch Full Command Center</button>
+              <button class="btn btn-ghost">Request Briefing</button>
+            </div>
+          </div>
+          <div class="hero-right">
+            <div class="hero-stat">
+              <span class="hero-stat-label">System Status</span>
+              <span class="hero-stat-val ok">OPERATIONAL</span>
+            </div>
+            <div class="hero-stat">
+              <span class="hero-stat-label">Threat Level</span>
+              <span class="hero-stat-val warn">ELEVATED</span>
+            </div>
+            <div class="hero-stat">
+              <span class="hero-stat-label">Pending Actions</span>
+              <span class="hero-stat-val crit">3 CRITICAL</span>
+            </div>
+            <div class="hero-stat">
+              <span class="hero-stat-label">Forecast Horizon</span>
+              <span class="hero-stat-val" style="color:var(--text-secondary)">Q2–Q4 2026</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="section-hd">Executive KPIs</div>
+        <div class="kpi-row">
+          <div class="kpi ok">
+            <div class="kpi-header">
+              <div class="kpi-label">Strategic Confidence</div>
+              <div class="kpi-source">COMPOSITE</div>
+            </div>
+            <div class="kpi-value">94.2<span style="font-size:0.8rem;color:var(--text-muted)">%</span></div>
+            <div class="kpi-footer">
+              <div class="kpi-delta up">↑ +3.1pp this week</div>
+              <div class="kpi-conf">conf. 91%</div>
+            </div>
+            <div class="kpi-bar-wrap"><div class="kpi-bar ok" style="width:94.2%"></div></div>
+          </div>
+          <div class="kpi warn">
+            <div class="kpi-header">
+              <div class="kpi-label">Risk-Weighted Score</div>
+              <div class="kpi-source">RISK AGENT</div>
+            </div>
+            <div class="kpi-value">7.8<span style="font-size:0.8rem;color:var(--text-muted)">/10</span></div>
+            <div class="kpi-footer">
+              <div class="kpi-delta down">↓ −0.4 vs baseline</div>
+              <div class="kpi-conf">24h avg</div>
+            </div>
+            <div class="kpi-bar-wrap"><div class="kpi-bar warn" style="width:78%"></div></div>
+          </div>
+          <div class="kpi ok">
+            <div class="kpi-header">
+              <div class="kpi-label">Active Agents</div>
+              <div class="kpi-source">PLATFORM</div>
+            </div>
+            <div class="kpi-value">4<span style="font-size:0.8rem;color:var(--text-muted)">/4</span></div>
+            <div class="kpi-footer">
+              <div class="kpi-delta neut">All operational</div>
+              <div class="kpi-conf">uptime 99.9%</div>
+            </div>
+            <div class="kpi-bar-wrap"><div class="kpi-bar ok" style="width:100%"></div></div>
+          </div>
+          <div class="kpi crit">
+            <div class="kpi-header">
+              <div class="kpi-label">Anomalies Detected</div>
+              <div class="kpi-source">ANOMALY</div>
+            </div>
+            <div class="kpi-value">12</div>
+            <div class="kpi-footer">
+              <div class="kpi-delta down">3 critical · 9 minor</div>
+              <div class="kpi-conf">last 2h</div>
+            </div>
+            <div class="kpi-bar-wrap"><div class="kpi-bar crit" style="width:100%"></div></div>
+          </div>
+        </div>
+
+        <!-- ALERTS -->
+        <div class="section-hd">Operational Alerts</div>
+        <div class="alerts-list">
+          <div class="alert-row flash-crit">
+            <div class="alert-stripe crit"></div>
+            <div class="alert-body">
+              <div class="alert-head">
+                <span class="severity-tag crit">CRITICAL</span>
+                <span class="alert-title">Market Volatility Spike Detected</span>
+                <span class="alert-source">SRC: NYSE · RISK AGENT</span>
+              </div>
+              <div class="alert-desc">VIX index up 34% in 2 hours. Portfolio exposure at 2.3× threshold. Derivative cluster flagged for rebalancing. Risk Agent recommends immediate portfolio review.</div>
+            </div>
+            <div class="alert-right">
+              <div class="alert-meta">14:32 UTC</div>
+              <div class="alert-action">→ REVIEW</div>
+            </div>
+          </div>
+          <div class="alert-row">
+            <div class="alert-stripe crit"></div>
+            <div class="alert-body">
+              <div class="alert-head">
+                <span class="severity-tag crit">CRITICAL</span>
+                <span class="alert-title">AI Anomaly: Derivative Exposure Cluster</span>
+                <span class="alert-source">SRC: ANOMALY AGENT</span>
+              </div>
+              <div class="alert-desc">Unusual pattern detected across 3 linked derivative positions. Correlation to prior Q3 2024 incident: 79%. Escalated for executive review. Auto-quarantine pending authorization.</div>
+            </div>
+            <div class="alert-right">
+              <div class="alert-meta">13:47 UTC</div>
+              <div class="alert-action">→ AUTHORIZE</div>
+            </div>
+          </div>
+          <div class="alert-row">
+            <div class="alert-stripe warn"></div>
+            <div class="alert-body">
+              <div class="alert-head">
+                <span class="severity-tag warn">WARNING</span>
+                <span class="alert-title">Competitor Action Identified</span>
+                <span class="alert-source">SRC: RESEARCH AGENT · PATENT DB</span>
+              </div>
+              <div class="alert-desc">3 new IP filings from primary competitor. Signals Q3 market entry with 87% confidence. Competitive response brief generated and pending approval.</div>
+            </div>
+            <div class="alert-right">
+              <div class="alert-meta">14:18 UTC</div>
+              <div class="alert-action">→ APPROVE</div>
+            </div>
+          </div>
+          <div class="alert-row">
+            <div class="alert-stripe info"></div>
+            <div class="alert-body">
+              <div class="alert-head">
+                <span class="severity-tag info">INFO</span>
+                <span class="alert-title">Forecasting Agent Retrained — Accuracy +4.3pp</span>
+                <span class="alert-source">SRC: ANALYTICS AGENT</span>
+              </div>
+              <div class="alert-desc">18-month enterprise dataset ingested. Model accuracy improved to 92.1%. Strategic forecast updated. Q2 executive brief queued for delivery.</div>
+            </div>
+            <div class="alert-right">
+              <div class="alert-meta">14:05 UTC</div>
+              <div class="alert-action">→ VIEW</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DUAL: RISK + SIMULATION -->
+        <div class="dual-panel">
+          <!-- RISK MATRIX -->
+          <div class="panel-box">
+            <div class="section-hd" style="margin-bottom:0">Risk Assessment Matrix</div>
+            <div class="risk-grid">
+              <div class="risk-cell">
+                <div class="risk-dot high"></div>
+                <span class="risk-label">Geopolitical</span>
+                <span class="risk-level high">HIGH</span>
+              </div>
+              <div class="risk-cell">
+                <div class="risk-dot med"></div>
+                <span class="risk-label">Macro</span>
+                <span class="risk-level med">MED</span>
+              </div>
+              <div class="risk-cell">
+                <div class="risk-dot low"></div>
+                <span class="risk-label">Regulatory</span>
+                <span class="risk-level low">LOW</span>
+              </div>
+              <div class="risk-cell">
+                <div class="risk-dot med"></div>
+                <span class="risk-label">Operational</span>
+                <span class="risk-level med">MED</span>
+              </div>
+              <div class="risk-cell">
+                <div class="risk-dot high"></div>
+                <span class="risk-label">Cyber</span>
+                <span class="risk-level high">HIGH</span>
+              </div>
+              <div class="risk-cell">
+                <div class="risk-dot low"></div>
+                <span class="risk-label">Credit</span>
+                <span class="risk-level low">LOW</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SIMULATION -->
+          <div class="panel-box" style="border-color: var(--border-accent);">
+            <div class="sim-header">
+              <div class="pulse-dot" style="background:var(--accent)"></div>
+              STRATEGIC SCENARIO SIMULATION — LIVE
+            </div>
+            <div class="scenarios-grid">
+              <div class="scenario">
+                <div class="scenario-name">A · Market Expansion</div>
+                <div class="scenario-row">
+                  <span class="s-label">Revenue upside</span>
+                  <span class="s-val">+$2.4B</span>
+                </div>
+                <div class="scenario-row">
+                  <span class="s-label">Risk level</span>
+                  <span class="s-val neg">MED 67%</span>
+                </div>
+                <div class="scenario-row">
+                  <span class="s-label">Capital req.</span>
+                  <span class="s-val">$890M</span>
+                </div>
+                <div class="scenario-row">
+                  <span class="s-label">Success prob.</span>
+                  <span class="s-val ok">78%</span>
+                </div>
+                <div class="prob-bar-wrap">
+                  <div class="prob-bar" style="width:78%;background:var(--warning)"></div>
+                </div>
+              </div>
+              <div class="scenario">
+                <div class="scenario-name">B · Defensive Consolidation</div>
+                <div class="scenario-row">
+                  <span class="s-label">Revenue upside</span>
+                  <span class="s-val">+$540M</span>
+                </div>
+                <div class="scenario-row">
+                  <span class="s-label">Risk level</span>
+                  <span class="s-val ok">LOW 23%</span>
+                </div>
+                <div class="scenario-row">
+                  <span class="s-label">Capital req.</span>
+                  <span class="s-val">$145M</span>
+                </div>
+                <div class="scenario-row">
+                  <span class="s-label">Success prob.</span>
+                  <span class="s-val ok">94%</span>
+                </div>
+                <div class="prob-bar-wrap">
+                  <div class="prob-bar" style="width:94%;background:var(--success)"></div>
+                </div>
+              </div>
+              <div class="scenario">
+                <div class="scenario-name">C · Strategic Acquisition</div>
+                <div class="scenario-row">
+                  <span class="s-label">Revenue upside</span>
+                  <span class="s-val">+$3.8B</span>
+                </div>
+                <div class="scenario-row">
+                  <span class="s-label">Risk level</span>
+                  <span class="s-val neg">HIGH 82%</span>
+                </div>
+                <div class="scenario-row">
+                  <span class="s-label">Capital req.</span>
+                  <span class="s-val">$2.1B</span>
+                </div>
+                <div class="scenario-row">
+                  <span class="s-label">Success prob.</span>
+                  <span class="s-val neg">62%</span>
+                </div>
+                <div class="prob-bar-wrap">
+                  <div class="prob-bar" style="width:62%;background:var(--critical)"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- COMMAND LOG -->
+        <div class="section-hd">Command Log</div>
+        <div class="log-panel">
+          <table class="log-table">
+            <tbody>
+              <tr>
+                <td class="log-ts">14:32</td>
+                <td class="log-agent"><span class="a-risk">RISK</span></td>
+                <td class="log-msg">Completed quarterly market analysis. 12 anomalies flagged, 3 classified critical.</td>
+              </tr>
+              <tr>
+                <td class="log-ts">14:18</td>
+                <td class="log-agent"><span class="a-strategy">STRATEGY</span></td>
+                <td class="log-msg">Strategic forecast updated with new competitor intelligence. Confidence: 87%.</td>
+              </tr>
+              <tr>
+                <td class="log-ts">14:05</td>
+                <td class="log-agent"><span class="a-content">CONTENT</span></td>
+                <td class="log-msg">Generated 3 executive briefs. Q2 outlook, regulatory exposure, and M&A landscape.</td>
+              </tr>
+              <tr>
+                <td class="log-ts">13:47</td>
+                <td class="log-agent"><span class="a-anomaly">ANOMALY</span></td>
+                <td class="log-msg">Unusual trading pattern detected in derivative exposure cluster. Escalated to Risk Agent.</td>
+              </tr>
+              <tr>
+                <td class="log-ts">13:22</td>
+                <td class="log-agent"><span class="a-analytics">ANALYTICS</span></td>
+                <td class="log-msg">Q4 forecast models processed. 18-month training window complete. Accuracy: 92.1%.</td>
+              </tr>
+              <tr>
+                <td class="log-ts">13:01</td>
+                <td class="log-agent"><span class="a-system">SYSTEM</span></td>
+                <td class="log-msg">Initialization complete. All agents operational. 47 risk vectors activated.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div><!-- /content-area -->
+
+      <!-- ── RIGHT PANEL ── -->
+      <div class="right-panel">
+        <div class="rp-section">
+          <div class="rp-label">Active Agents</div>
+          <div class="agent-row">
+            <div class="agent-name-row">
+              <div class="agent-dot"></div>
+              <div class="agent-name">Research</div>
+            </div>
+            <div class="agent-status">Market intelligence · 94% accuracy</div>
+          </div>
+          <div class="agent-row">
+            <div class="agent-name-row">
+              <div class="agent-dot"></div>
+              <div class="agent-name">Strategy</div>
+            </div>
+            <div class="agent-status">Scenario planning · 3 active</div>
+          </div>
+          <div class="agent-row">
+            <div class="agent-name-row">
+              <div class="agent-dot" style="background:var(--warning)"></div>
+              <div class="agent-name">Risk</div>
+            </div>
+            <div class="agent-status">Monitoring 47 vectors · 3 critical</div>
+          </div>
+          <div class="agent-row">
+            <div class="agent-name-row">
+              <div class="agent-dot"></div>
+              <div class="agent-name">Analytics</div>
+            </div>
+            <div class="agent-status">Processing real-time feeds</div>
+          </div>
+        </div>
+
+        <div class="rp-section">
+          <div class="rp-label">System Status</div>
+          <div class="status-row">
+            <div class="status-label">
+              <div class="agent-dot" style="width:5px;height:5px;border-radius:50%;background:var(--success);flex-shrink:0"></div>
+              Data Integrity
+            </div>
+            <div class="status-val">100%</div>
+          </div>
+          <div class="status-row">
+            <div class="status-label">
+              <div class="agent-dot" style="width:5px;height:5px;border-radius:50%;background:var(--success);flex-shrink:0"></div>
+              API Health
+            </div>
+            <div class="status-val">All live</div>
+          </div>
+          <div class="status-row">
+            <div class="status-label">
+              <div class="agent-dot" style="width:5px;height:5px;border-radius:50%;background:var(--success);flex-shrink:0"></div>
+              Model Confidence
+            </div>
+            <div class="status-val">91.3%</div>
+          </div>
+        </div>
+
+        <div class="rp-section">
+          <div class="rp-label">Next Actions</div>
+          <div class="action-item">
+            <span class="action-verb">→ REVIEW</span>
+            Market expansion scenario before EOD
+          </div>
+          <div class="action-item">
+            <span class="action-verb">→ APPROVE</span>
+            Competitive response brief · pending 6h
+          </div>
+          <div class="action-item">
+            <span class="action-verb">→ INITIATE</span>
+            Q2 strategic planning cycle
+          </div>
+        </div>
+      </div>
+    </div><!-- /main-container -->
+
+    <script>
+      function updateTime() {
+        const now = new Date();
+        const t = now.toLocaleTimeString('en-US', {
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+          hour12: false, timeZone: 'UTC'
+        });
+        document.getElementById('current-time').textContent = t + ' UTC · ' +
+          now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+      }
+      updateTime();
+      setInterval(updateTime, 1000);
+
+      // Session ID from timestamp
+      const sid = document.getElementById('session-id');
+      if (sid) {
+        const hex = Math.floor(Math.random() * 0xFFFF).toString(16).toUpperCase().padStart(4,'0');
+        sid.textContent = 'SESSION ' + hex + '-2026';
+      }
+    </script>
+  </body>
+</html>

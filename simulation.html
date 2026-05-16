@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Strategic Simulation Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d10;
+  --bg2:#13131a;
+  --bg3:#1a1a24;
+  --bg4:#20202e;
+  --b:rgba(255,255,255,0.07);
+  --bs:rgba(255,255,255,0.13);
+  --ink:#e8eaed;
+  --muted:#8a8d9a;
+  --faint:#52556a;
+  --accent:#6aa8ff;
+  --success:#2ecc71;
+  --warn:#f39c12;
+  --danger:#e74c3c;
+  --info:#6aa8ff;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'Syne',sans-serif;
+}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:14px;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.sim{max-width:860px;margin:0 auto;padding:2.5rem 2rem}
+.header-strip{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;padding-bottom:1.25rem;border-bottom:0.5px solid var(--b)}
+.sys-label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-family:var(--mono)}
+.sys-title{font-size:1.4rem;font-weight:700;letter-spacing:-.02em;margin-top:.3rem;color:var(--ink)}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--success);font-family:var(--mono);letter-spacing:.08em}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.scenario-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.5rem}
+.tab{padding:.65rem .75rem;border:0.5px solid var(--b);border-radius:6px;cursor:pointer;background:var(--bg2);transition:all .15s;text-align:left}
+.tab:hover{border-color:var(--bs);background:var(--bg3)}
+.tab.active{border-color:rgba(106,168,255,0.4);background:rgba(106,168,255,0.06)}
+.tab-label{font-weight:700;color:var(--ink);font-size:12px;margin-bottom:3px}
+.tab.active .tab-label{color:var(--accent)}
+.tab-delta{font-size:11px;font-family:var(--mono);color:var(--muted)}
+.tab.active .tab-delta{color:rgba(106,168,255,0.7)}
+.main-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.panel{background:var(--bg2);border:0.5px solid var(--b);border-radius:8px;padding:1.1rem 1.25rem}
+.panel-title{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:.85rem;font-family:var(--mono)}
+.confidence-ring-wrap{display:flex;align-items:center;gap:1.1rem}
+.conf-score{font-size:2.2rem;font-weight:700;color:var(--ink);font-family:var(--mono);line-height:1}
+.conf-label{font-size:11px;color:var(--muted);margin-top:3px}
+.conf-tier{font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-top:5px;font-family:var(--mono);font-weight:600}
+.impact-rows{display:flex;flex-direction:column;gap:.55rem}
+.impact-row{display:flex;align-items:center;gap:.7rem}
+.impact-key{font-size:11px;color:var(--muted);min-width:88px;flex-shrink:0;font-family:var(--mono)}
+.impact-bar-bg{flex:1;height:4px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.impact-bar{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.impact-val{font-size:11px;font-family:var(--mono);min-width:52px;text-align:right}
+.risk-panel,.timeline-panel,.ai-panel,.compare-panel{background:var(--bg2);border:0.5px solid var(--b);border-radius:8px;padding:1.1rem 1.25rem;margin-bottom:1rem}
+.risk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-top:.6rem}
+.risk-cell{background:var(--bg3);border:0.5px solid var(--b);border-radius:6px;padding:.75rem .9rem}
+.risk-icon{font-size:15px;margin-bottom:.3rem;color:var(--muted)}
+.risk-name{font-size:11px;color:var(--muted);margin-bottom:.2rem;font-family:var(--mono)}
+.risk-val{font-size:13px;font-weight:700;font-family:var(--mono)}
+.risk-bar-bg{height:3px;background:var(--bg4);border-radius:2px;margin-top:.45rem;overflow:hidden}
+.risk-bar{height:100%;border-radius:2px;transition:width .5s ease}
+.timeline-svg{width:100%;display:block}
+.ai-header{display:flex;align-items:center;gap:.6rem;margin-bottom:.85rem}
+.ai-badge{font-size:10px;font-family:var(--mono);letter-spacing:.08em;padding:2px 8px;border-radius:3px;background:rgba(106,168,255,0.1);color:var(--accent);border:0.5px solid rgba(106,168,255,0.2)}
+.ai-text{font-size:13px;line-height:1.7;color:var(--muted)}
+.ai-reasoning-steps{display:flex;flex-direction:column;gap:.45rem;margin-top:.85rem}
+.reasoning-step{display:flex;align-items:flex-start;gap:.55rem;font-size:11px;color:var(--faint);font-family:var(--mono)}
+.reasoning-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);margin-top:5px;flex-shrink:0;opacity:.6}
+.compare-table{width:100%;font-size:12px;border-collapse:collapse}
+.compare-table th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding:.45rem .6rem;text-align:left;font-family:var(--mono);border-bottom:0.5px solid var(--b)}
+.compare-table td{padding:.5rem .6rem;border-bottom:0.5px solid var(--b);color:var(--muted);vertical-align:middle}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table td:first-child{color:var(--ink);font-weight:500}
+.highlight-row td{background:rgba(106,168,255,0.05)}
+.highlight-row td:first-child{color:var(--accent)}
+.chip{display:inline-flex;align-items:center;font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:3px;font-weight:600}
+.chip-up{background:rgba(46,204,113,0.12);color:var(--success)}
+.chip-down{background:rgba(231,76,60,0.12);color:var(--danger)}
+.chip-warn{background:rgba(243,156,18,0.12);color:var(--warn)}
+.chip-neutral{background:var(--bg4);color:var(--muted)}
+.footer-row{display:flex;gap:.75rem;align-items:center}
+.action-btn{flex:1;padding:.6rem;border:0.5px solid var(--bs);border-radius:6px;background:transparent;cursor:pointer;font-size:12px;color:var(--ink);font-family:var(--sans);font-weight:500;transition:background .15s}
+.action-btn:hover{background:var(--bg3)}
+.action-btn.primary{border-color:rgba(106,168,255,0.4);background:rgba(106,168,255,0.08);color:var(--accent)}
+.action-btn.primary:hover{background:rgba(106,168,255,0.14)}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:rgba(106,168,255,0.15);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="sim">
+  <div class="header-strip">
+    <div>
+      <div class="sys-label">Enterprise Intelligence Platform — v4.2</div>
+      <div class="sys-title">Strategic Simulation Console</div>
+    </div>
+    <div class="live-badge"><div class="live-dot"></div>LIVE MODEL</div>
+  </div>
+
+  <div class="scenario-tabs">
+    <div class="tab active" onclick="setScenario(0,this)">
+      <div class="tab-label">Supplier disruption</div>
+      <div class="tab-delta">−$84M ARR risk</div>
+    </div>
+    <div class="tab" onclick="setScenario(1,this)">
+      <div class="tab-label">Pricing increase</div>
+      <div class="tab-delta">+$47M ARR upside</div>
+    </div>
+    <div class="tab" onclick="setScenario(2,this)">
+      <div class="tab-label">Market expansion</div>
+      <div class="tab-delta">+$130M TAM unlock</div>
+    </div>
+    <div class="tab" onclick="setScenario(3,this)">
+      <div class="tab-label">Workforce reduction</div>
+      <div class="tab-delta">−$28M OpEx</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <div class="panel">
+      <div class="panel-title">Forecast confidence</div>
+      <div class="confidence-ring-wrap">
+        <svg width="76" height="76" viewBox="0 0 76 76">
+          <circle cx="38" cy="38" r="30" fill="none" stroke="var(--bg4)" stroke-width="6"/>
+          <circle id="conf-arc" cx="38" cy="38" r="30" fill="none" stroke-width="6" stroke-linecap="round"
+            stroke-dasharray="188.5" stroke-dashoffset="47" transform="rotate(-90 38 38)"
+            style="transition:stroke-dashoffset .6s ease;stroke:var(--warn)"/>
+        </svg>
+        <div>
+          <div class="conf-score" id="conf-score">75%</div>
+          <div class="conf-label">Model confidence</div>
+          <div class="conf-tier" id="conf-tier" style="color:var(--warn)">MODERATE</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Revenue impact</div>
+      <div class="impact-rows" id="impact-rows"></div>
+    </div>
+  </div>
+
+  <div class="risk-panel">
+    <div class="panel-title">Operational risk surface</div>
+    <div class="risk-grid" id="risk-grid"></div>
+  </div>
+
+  <div class="timeline-panel">
+    <div class="panel-title">Revenue trajectory — 4-quarter horizon</div>
+    <svg class="timeline-svg" viewBox="0 0 800 160" preserveAspectRatio="none">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <line x1="50" y1="130" x2="780" y2="130" stroke="var(--b)" stroke-width="0.5"/>
+      <line x1="50" y1="20" x2="50" y2="134" stroke="var(--b)" stroke-width="0.5"/>
+      <line x1="50" y1="80" x2="780" y2="80" stroke="var(--b)" stroke-width="0.5" stroke-dasharray="3 5"/>
+      <text x="44" y="134" text-anchor="end" font-size="10" fill="var(--faint)" font-family="IBM Plex Mono,monospace">0</text>
+      <text x="44" y="83" text-anchor="end" font-size="10" fill="var(--faint)" font-family="IBM Plex Mono,monospace">50M</text>
+      <text x="44" y="25" text-anchor="end" font-size="10" fill="var(--faint)" font-family="IBM Plex Mono,monospace">100M</text>
+      <text x="210" y="148" text-anchor="middle" font-size="10" fill="var(--faint)" font-family="IBM Plex Mono,monospace">Q3</text>
+      <text x="380" y="148" text-anchor="middle" font-size="10" fill="var(--faint)" font-family="IBM Plex Mono,monospace">Q4</text>
+      <text x="550" y="148" text-anchor="middle" font-size="10" fill="var(--faint)" font-family="IBM Plex Mono,monospace">Q1+1</text>
+      <text x="720" y="148" text-anchor="middle" font-size="10" fill="var(--faint)" font-family="IBM Plex Mono,monospace">Q2+1</text>
+      <path id="tl-bull" fill="none" stroke="var(--success)" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.7" d="M50,80 C120,72 200,62 320,52 S490,42 760,30"/>
+      <path id="tl-base" fill="none" stroke="var(--warn)" stroke-width="2" d="M50,80 C120,88 210,100 330,108 S500,114 760,112"/>
+      <path id="tl-bear" fill="none" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.7" d="M50,80 C100,104 170,124 310,128 S490,130 760,130"/>
+      <circle cx="50" cy="80" r="4" fill="var(--accent)"/>
+      <text x="60" y="76" font-size="10" fill="var(--accent)" font-family="IBM Plex Mono,monospace">NOW</text>
+      <text x="720" y="27" font-size="10" fill="var(--success)" font-family="IBM Plex Mono,monospace">bull</text>
+      <text x="720" y="108" font-size="10" fill="var(--warn)" font-family="IBM Plex Mono,monospace">base</text>
+      <text x="720" y="128" font-size="10" fill="var(--danger)" font-family="IBM Plex Mono,monospace">bear</text>
+    </svg>
+  </div>
+
+  <div class="ai-panel">
+    <div class="ai-header">
+      <i class="ti ti-circuit-cell" style="font-size:16px;color:var(--accent)"></i>
+      <span style="font-size:13px;font-weight:700;color:var(--ink)">AI reasoning summary</span>
+      <div class="ai-badge">REASONING ENGINE</div>
+    </div>
+    <div class="ai-text" id="ai-text"></div>
+    <div class="ai-reasoning-steps" id="ai-steps"></div>
+  </div>
+
+  <div class="compare-panel">
+    <div class="panel-title">Cross-scenario comparison</div>
+    <table class="compare-table">
+      <thead>
+        <tr><th>Scenario</th><th>Rev impact</th><th>Timeframe</th><th>Confidence</th><th>Recommendation</th></tr>
+      </thead>
+      <tbody id="compare-body">
+        <tr class="highlight-row"><td>Supplier disruption</td><td><span class="chip chip-down">−$42M EV</span></td><td>60–90 days</td><td><span class="chip chip-warn">75%</span></td><td><span class="chip chip-neutral">Mitigate</span></td></tr>
+        <tr><td>Pricing increase</td><td><span class="chip chip-up">+$47M</span></td><td>30 days</td><td><span class="chip chip-up">84%</span></td><td><span class="chip chip-up">Execute</span></td></tr>
+        <tr><td>Market expansion</td><td><span class="chip chip-up">+$130M TAM</span></td><td>18–24 months</td><td><span class="chip chip-warn">61%</span></td><td><span class="chip chip-warn">Stage-gate</span></td></tr>
+        <tr><td>Workforce reduction</td><td><span class="chip chip-down">−$28M OpEx</span></td><td>90 days</td><td><span class="chip chip-warn">71%</span></td><td><span class="chip chip-down">Caution</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer-row">
+    <button class="action-btn" onclick="alert('Connect to your AI backend to drill into this scenario.')">Drill into scenario</button>
+    <button class="action-btn" onclick="alert('Connect to your AI backend to compare scenarios.')">Compare top two</button>
+    <button class="action-btn primary" onclick="alert('Connect to your AI backend to generate a board memo.')">Generate board memo ↗</button>
+  </div>
+</div>
+
+<script>
+const scenarios=[
+  {
+    conf:75,tier:"MODERATE",tierColor:"var(--warn)",arcStroke:"var(--warn)",
+    impacts:[["Base case","−$31M",72,"rgba(46,204,113,.8)"],["Bull case","−$14M",44,"rgba(106,168,255,.8)"],["Bear case","−$84M",90,"rgba(231,76,60,.8)"],["EV-weighted","−$42M",60,"rgba(243,156,18,.8)"]],
+    risks:[["ti-alert-triangle","Supply chain","Critical",88,"var(--danger)"],["ti-users","Customer churn","Elevated",61,"var(--warn)"],["ti-scale","Regulatory","Low",18,"var(--success)"],["ti-building-bank","Liquidity","Moderate",44,"var(--warn)"],["ti-world","Geopolitical","High",74,"var(--danger)"],["ti-cpu","Operational","Contained",28,"var(--success)"]],
+    ai:"Primary disruption vector is single-source dependency on Tier 1 supplier (APAC region). Historical analogs suggest 60–90 day resolution window with 3 probable intervention paths. Recommend immediate dual-source qualification while activating buffer inventory protocol.",
+    steps:["Cross-referenced 14 historical supply disruption events (2008–2024) for pattern matching","Monte Carlo simulation: 10,000 runs across 6 macro scenarios with correlated variables","Flagged regulatory constraint in EU Directive 2023/1542 as binding on mitigation path C","Confidence penalized 12pts for insufficient forward order book visibility beyond Q4"],
+    tlBull:"M50,80 C120,72 200,62 320,52 S490,42 760,30",
+    tlBase:"M50,80 C120,88 210,100 330,108 S500,114 760,112",
+    tlBear:"M50,80 C100,104 170,124 310,128 S490,130 760,130"
+  },
+  {
+    conf:84,tier:"HIGH",tierColor:"var(--success)",arcStroke:"var(--success)",
+    impacts:[["Gross margin δ","+$47M",68,"rgba(46,204,113,.8)"],["Churn risk","−$8M",20,"rgba(231,76,60,.8)"],["Net rev impact","+$39M",55,"rgba(46,204,113,.8)"],["Payback period","4.2 mo",40,"rgba(106,168,255,.8)"]],
+    risks:[["ti-chart-line","Price elasticity","Moderate",48,"var(--warn)"],["ti-trophy","Competitive resp.","Elevated",62,"var(--warn)"],["ti-scale","Regulatory","Low",12,"var(--success)"],["ti-star","Brand perception","Low",22,"var(--success)"],["ti-mood-smile","Customer sat.","Elevated",66,"var(--warn)"],["ti-cpu","Operational","Minimal",10,"var(--success)"]],
+    ai:"Segmentation model identifies three distinct price-sensitivity cohorts. SMB segment shows 2.3x higher churn elasticity vs enterprise. Recommend tiered rollout: enterprise tier first (85%+ confidence), SMB tier deferred 60 days pending retention data.",
+    steps:["Analyzed 230,000 customer contract records for price-elasticity signals","Benchmarked 6 comparable SaaS pricing actions (2020–2024) for churn outcomes","Segmented cohorts by ACV, tenure, and product adoption depth","Identified 18% of SMB cohort as flight-risk — flagged for proactive CSM intervention"],
+    tlBull:"M50,80 C100,66 200,50 330,36 S500,24 760,16",
+    tlBase:"M50,80 C110,72 220,60 340,50 S510,40 760,32",
+    tlBear:"M50,80 C110,78 230,74 350,74 S510,78 760,86"
+  },
+  {
+    conf:61,tier:"LOW",tierColor:"var(--danger)",arcStroke:"var(--danger)",
+    impacts:[["TAM unlock","+$130M",88,"rgba(46,204,113,.8)"],["Entry cost","−$45M",60,"rgba(231,76,60,.8)"],["Break-even","Month 22",50,"rgba(243,156,18,.8)"],["IRR (5yr)","31%",72,"rgba(46,204,113,.8)"]],
+    risks:[["ti-map","Market entry","High",78,"var(--danger)"],["ti-scale","Regulatory","Moderate",52,"var(--warn)"],["ti-users","Talent","High",70,"var(--danger)"],["ti-star","Brand","Low",20,"var(--success)"],["ti-currency-dollar","FX exposure","Elevated",60,"var(--warn)"],["ti-rocket","Execution","High",80,"var(--danger)"]],
+    ai:"DACH and Nordics represent lowest-friction entry with existing partner network leverage. SEA expansion carries 3.2x higher regulatory complexity and talent acquisition cost. Stage-gate approach recommended: DACH pilot → data collection → full EMEA decision at month 9.",
+    steps:["Modeled 8 geographic entry sequences using partner density and ICP concentration data","Ran regulatory mapping across 14 jurisdictions — 4 flagged as high-friction","Estimated talent acquisition premium vs domestic baseline for each region","Confidence bounded at 61% due to limited comparable cohort data post-2022 macro shift"],
+    tlBull:"M50,80 C110,76 220,70 350,58 S520,36 760,20",
+    tlBase:"M50,80 C130,80 260,82 380,78 S540,62 760,46",
+    tlBear:"M50,80 C120,86 240,98 370,110 S530,118 760,124"
+  },
+  {
+    conf:71,tier:"MODERATE",tierColor:"var(--warn)",arcStroke:"var(--warn)",
+    impacts:[["OpEx savings","−$28M",62,"rgba(46,204,113,.8)"],["Severance cost","−$6M",22,"rgba(231,76,60,.8)"],["Productivity δ","−12%",50,"rgba(243,156,18,.8)"],["Net 12-mo","−$22M",48,"rgba(46,204,113,.8)"]],
+    risks:[["ti-users","Talent retention","Critical",86,"var(--danger)"],["ti-heart","Culture","High",74,"var(--danger)"],["ti-rocket","Execution","Moderate",46,"var(--warn)"],["ti-scale","Regulatory","Moderate",42,"var(--warn)"],["ti-building-store","Customer impact","Low",24,"var(--success)"],["ti-refresh","Rebound hiring","Elevated",58,"var(--warn)"]],
+    ai:"Role-level analysis surfaces 340 positions with under 60% utilization score across 6 months. Engineering and G&A carry highest redundancy concentration. WARN Act obligations triggered in 3 US states. Recommend phased approach to preserve institutional knowledge and avoid single-event cultural shock.",
+    steps:["Analyzed productivity and utilization signals across 1,200 roles over 6 months","Modeled morale and attrition cascades using post-RIF sentiment data from comparable events","Flagged WARN Act thresholds in CA, NY, and WA — legal review required before announcement","Scenario confidence penalized for incomplete high-performer attrition probability spans"],
+    tlBull:"M50,80 C90,72 180,62 300,56 S480,50 760,44",
+    tlBase:"M50,80 C90,78 180,80 300,84 S480,88 760,94",
+    tlBear:"M50,80 C90,86 180,100 300,112 S480,120 760,126"
+  }
+];
+
+function setScenario(idx,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const s=scenarios[idx];
+  const c=2*Math.PI*30;
+  const arc=document.getElementById('conf-arc');
+  arc.style.strokeDashoffset=(c*(1-s.conf/100)).toFixed(1);
+  arc.style.stroke=s.arcStroke;
+  document.getElementById('conf-score').textContent=s.conf+'%';
+  const tier=document.getElementById('conf-tier');
+  tier.textContent=s.tier;
+  tier.style.color=s.tierColor;
+  document.getElementById('impact-rows').innerHTML=s.impacts.map(([k,v,w,c])=>
+    `<div class="impact-row"><div class="impact-key">${k}</div><div class="impact-bar-bg"><div class="impact-bar" style="width:${w}%;background:${c}"></div></div><div class="impact-val" style="color:${c}">${v}</div></div>`
+  ).join('');
+  document.getElementById('risk-grid').innerHTML=s.risks.map(([icon,n,v,w,c])=>
+    `<div class="risk-cell"><div class="risk-icon"><i class="ti ${icon}"></i></div><div class="risk-name">${n}</div><div class="risk-val" style="color:${c}">${v}</div><div class="risk-bar-bg"><div class="risk-bar" style="width:${w}%;background:${c};opacity:.7"></div></div></div>`
+  ).join('');
+  document.getElementById('tl-bull').setAttribute('d',s.tlBull);
+  document.getElementById('tl-base').setAttribute('d',s.tlBase);
+  document.getElementById('tl-bear').setAttribute('d',s.tlBear);
+  document.getElementById('ai-text').textContent=s.ai;
+  document.getElementById('ai-steps').innerHTML=s.steps.map(st=>
+    `<div class="reasoning-step"><div class="reasoning-dot"></div><span>${st}</span></div>`
+  ).join('');
+  document.querySelectorAll('#compare-body tr').forEach((tr,i)=>tr.classList.toggle('highlight-row',i===idx));
+}
+
+setScenario(0,document.querySelector('.tab'));
+</script>
+</body>
+</html>

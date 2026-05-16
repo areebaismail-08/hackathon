@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Strategic Simulation Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;
+  --bg2:#111118;
+  --bg3:#161620;
+  --bg4:#1c1c28;
+  --bg5:#222232;
+  --b:rgba(255,255,255,0.055);
+  --bs:rgba(255,255,255,0.11);
+  --bm:rgba(255,255,255,0.17);
+  --ink:#dde0e8;
+  --ink2:#b8bcc8;
+  --muted:#7a7d8e;
+  --faint:#4a4d60;
+  --accent:#6aa8ff;
+  --accent2:rgba(106,168,255,0.12);
+  --success:#2db368;
+  --warn:#e09b26;
+  --danger:#d94f3a;
+  --info:#6aa8ff;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'Syne',sans-serif;
+}
+html,body{
+  height:100%;
+  background:var(--bg);
+  overflow:hidden;
+}
+.frame{
+  display:flex;
+  height:100vh;
+  font-family:var(--sans);
+  font-size:13px;
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:52px;
+  min-width:52px;
+  background:var(--bg2);
+  border-right:0.5px solid var(--b);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:14px 0;
+  gap:0;
+  z-index:10;
+  flex-shrink:0;
+}
+.sb-logo{
+  width:28px;height:28px;
+  border:0.5px solid var(--bs);
+  border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:18px;
+  background:var(--bg3);
+}
+.sb-logo svg{width:14px;height:14px}
+.sb-sep{width:24px;height:0.5px;background:var(--b);margin:10px 0}
+.sb-item{
+  width:36px;height:36px;
+  border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:background .15s;
+  position:relative;
+  color:var(--faint);
+}
+.sb-item:hover{background:var(--bg4);color:var(--muted)}
+.sb-item.active{background:var(--accent2);color:var(--accent)}
+.sb-item .ti{font-size:15px}
+.sb-pip{
+  position:absolute;top:6px;right:6px;
+  width:4px;height:4px;
+  border-radius:50%;
+  background:var(--warn);
+}
+.sb-bottom{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:6px}
+
+/* ── CONTENT AREA ── */
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* ── ALERT STRIP ── */
+.alert-strip{
+  display:flex;align-items:center;
+  background:var(--bg2);
+  border-bottom:0.5px solid var(--b);
+  padding:0 16px;
+  height:32px;
+  flex-shrink:0;
+  overflow:hidden;
+  gap:0;
+}
+.alert-item{
+  display:flex;align-items:center;gap:6px;
+  padding:0 14px 0 0;
+  border-right:0.5px solid var(--b);
+  margin-right:14px;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.alert-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.alert-label{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:.04em}
+.alert-val{font-size:10px;font-family:var(--mono);font-weight:600;margin-left:4px}
+.alert-strip-ticker{flex:1;overflow:hidden;position:relative;height:100%;display:flex;align-items:center}
+.ticker-inner{
+  display:flex;gap:0;
+  animation:ticker 44s linear infinite;
+  white-space:nowrap;
+  font-size:10px;font-family:var(--mono);
+  color:var(--faint);letter-spacing:.04em;
+}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── SCROLL AREA ── */
+.scroll-area{
+  flex:1;overflow-y:auto;
+  padding:16px 20px 20px 20px;
+  display:flex;flex-direction:column;gap:11px;
+}
+.scroll-area::-webkit-scrollbar{width:4px}
+.scroll-area::-webkit-scrollbar-track{background:transparent}
+.scroll-area::-webkit-scrollbar-thumb{background:rgba(106,168,255,0.1);border-radius:2px}
+
+/* ── HEADER ── */
+.header-strip{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:12px;
+  border-bottom:0.5px solid var(--b);
+}
+.sys-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-family:var(--mono)}
+.sys-title{font-size:1.2rem;font-weight:700;letter-spacing:-.02em;margin-top:.2rem;color:var(--ink)}
+.header-right{display:flex;align-items:center;gap:10px}
+.live-badge{
+  display:flex;align-items:center;gap:5px;
+  font-size:10px;color:var(--success);font-family:var(--mono);letter-spacing:.08em;
+  padding:3px 8px;
+  border:0.5px solid rgba(45,179,104,0.25);
+  border-radius:3px;
+  background:rgba(45,179,104,0.06);
+}
+.live-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--success);
+  animation:pulse 2s ease-in-out infinite;
+}
+.model-tag{
+  font-size:10px;font-family:var(--mono);color:var(--faint);letter-spacing:.06em;
+  padding:3px 8px;border:0.5px solid var(--b);border-radius:3px;
+}
+
+/* ── AI ORCHESTRATION PANEL ── */
+.orch-panel{
+  background:var(--bg2);
+  border:0.5px solid var(--b);
+  border-radius:7px;
+  padding:9px 14px;
+  display:flex;align-items:center;gap:12px;
+  flex-shrink:0;
+}
+.orch-label{
+  font-size:10px;font-family:var(--mono);letter-spacing:.1em;
+  text-transform:uppercase;color:var(--faint);flex-shrink:0;
+}
+.orch-agents{display:flex;gap:7px;flex:1;flex-wrap:wrap}
+.agent-cell{
+  display:flex;align-items:center;gap:5px;
+  padding:3px 8px;
+  border:0.5px solid var(--b);
+  border-radius:4px;
+  background:var(--bg3);
+}
+.agent-name{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:.04em}
+.agent-status{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.agent-busy{background:var(--accent);animation:pulse 1.2s ease-in-out infinite}
+.agent-idle{background:var(--faint)}
+.agent-warn{background:var(--warn);animation:pulse 1.8s ease-in-out infinite}
+.agent-ok{background:var(--success)}
+.orch-right{font-size:10px;font-family:var(--mono);color:var(--faint);flex-shrink:0}
+.orch-count{color:var(--accent)}
+
+/* ── SCENARIO TABS ── */
+.scenario-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.tab{
+  padding:.55rem .7rem;
+  border:0.5px solid var(--b);
+  border-radius:6px;
+  cursor:pointer;
+  background:var(--bg2);
+  transition:all .15s;text-align:left;
+}
+.tab:hover{border-color:var(--bs);background:var(--bg3)}
+.tab.active{border-color:rgba(106,168,255,0.35);background:rgba(106,168,255,0.05)}
+.tab-label{font-weight:700;color:var(--ink2);font-size:11px;margin-bottom:2px}
+.tab.active .tab-label{color:var(--accent)}
+.tab-delta{font-size:10px;font-family:var(--mono);color:var(--muted)}
+.tab.active .tab-delta{color:rgba(106,168,255,0.65)}
+.tab-indicator{height:1.5px;width:100%;margin-top:6px;border-radius:1px;background:var(--b);overflow:hidden}
+.tab-indicator-fill{height:100%;border-radius:1px}
+
+/* ── MAIN GRID (3-col) ── */
+.main-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.panel{background:var(--bg2);border:0.5px solid var(--b);border-radius:7px;padding:.9rem 1.05rem}
+.panel-title{
+  font-size:9px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:.7rem;
+  font-family:var(--mono);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.confidence-ring-wrap{display:flex;align-items:center;gap:.85rem}
+.conf-score{font-size:2rem;font-weight:700;color:var(--ink);font-family:var(--mono);line-height:1}
+.conf-label{font-size:10px;color:var(--muted);margin-top:2px}
+.conf-tier{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-top:4px;font-family:var(--mono);font-weight:600}
+.impact-rows{display:flex;flex-direction:column;gap:.42rem}
+.impact-row{display:flex;align-items:center;gap:.6rem}
+.impact-key{font-size:10px;color:var(--muted);min-width:76px;flex-shrink:0;font-family:var(--mono)}
+.impact-bar-bg{flex:1;height:3px;background:var(--bg5);border-radius:2px;overflow:hidden}
+.impact-bar{height:100%;border-radius:2px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.impact-val{font-size:10px;font-family:var(--mono);min-width:46px;text-align:right}
+.signal-panel{display:flex;flex-direction:column;gap:7px}
+.sig-row{display:flex;align-items:center;justify-content:space-between;font-size:10px}
+.sig-key{color:var(--muted);font-family:var(--mono)}
+.sig-val{font-family:var(--mono);font-weight:600}
+.sig-bar-wrap{flex:1;margin:0 8px;height:2px;background:var(--bg5);border-radius:1px;overflow:hidden}
+.sig-bar{height:100%;border-radius:1px;transition:width .5s ease}
+
+/* ── RISK ── */
+.risk-panel{background:var(--bg2);border:0.5px solid var(--b);border-radius:7px;padding:.9rem 1.05rem}
+.risk-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-top:.5rem}
+.risk-cell{background:var(--bg3);border:0.5px solid var(--b);border-radius:5px;padding:.6rem .7rem}
+.risk-icon{font-size:13px;margin-bottom:.2rem;color:var(--muted)}
+.risk-name{font-size:9px;color:var(--muted);margin-bottom:.15rem;font-family:var(--mono)}
+.risk-val{font-size:11px;font-weight:700;font-family:var(--mono)}
+.risk-bar-bg{height:2px;background:var(--bg5);border-radius:1px;margin-top:.35rem;overflow:hidden}
+.risk-bar{height:100%;border-radius:1px;transition:width .5s ease}
+
+/* ── TIMELINE ── */
+.timeline-panel{background:var(--bg2);border:0.5px solid var(--b);border-radius:7px;padding:.9rem 1.05rem}
+.timeline-svg{width:100%;display:block}
+
+/* ── AI PANEL ── */
+.ai-panel{background:var(--bg2);border:0.5px solid var(--b);border-radius:7px;padding:.9rem 1.05rem}
+.ai-header{display:flex;align-items:center;gap:.5rem;margin-bottom:.65rem}
+.ai-badge{
+  font-size:9px;font-family:var(--mono);letter-spacing:.08em;
+  padding:2px 6px;border-radius:3px;
+  background:rgba(106,168,255,0.08);color:var(--accent);
+  border:0.5px solid rgba(106,168,255,0.18);
+}
+.ai-text{font-size:12px;line-height:1.65;color:var(--muted)}
+.ai-reasoning-steps{display:flex;flex-direction:column;gap:.32rem;margin-top:.65rem}
+.reasoning-step{display:flex;align-items:flex-start;gap:.45rem;font-size:10px;color:var(--faint);font-family:var(--mono)}
+.reasoning-dot{width:3px;height:3px;border-radius:50%;background:var(--accent);margin-top:5px;flex-shrink:0;opacity:.5}
+
+/* ── COMPARE ── */
+.compare-panel{background:var(--bg2);border:0.5px solid var(--b);border-radius:7px;padding:.9rem 1.05rem}
+.compare-table{width:100%;font-size:11px;border-collapse:collapse}
+.compare-table th{
+  font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--faint);padding:.38rem .5rem;text-align:left;
+  font-family:var(--mono);border-bottom:0.5px solid var(--b);
+}
+.compare-table td{padding:.4rem .5rem;border-bottom:0.5px solid var(--b);color:var(--muted);vertical-align:middle}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table td:first-child{color:var(--ink2);font-weight:500}
+.highlight-row td{background:rgba(106,168,255,0.04)}
+.highlight-row td:first-child{color:var(--accent)}
+.chip{
+  display:inline-flex;align-items:center;
+  font-size:9px;font-family:var(--mono);
+  padding:2px 6px;border-radius:3px;
+  font-weight:600;letter-spacing:.02em;
+}
+.chip-up{background:rgba(45,179,104,0.1);color:var(--success)}
+.chip-down{background:rgba(217,79,58,0.1);color:var(--danger)}
+.chip-warn{background:rgba(224,155,38,0.1);color:var(--warn)}
+.chip-neutral{background:var(--bg4);color:var(--muted)}
+
+/* ── FOOTER BUTTONS ── */
+.footer-row{display:flex;gap:7px;align-items:center}
+.action-btn{
+  flex:1;
+  padding:.5rem .7rem;
+  border:0.5px solid var(--bs);
+  border-radius:5px;
+  background:transparent;
+  cursor:pointer;
+  font-size:11px;color:var(--ink2);
+  font-family:var(--sans);font-weight:500;
+  transition:all .15s;
+  letter-spacing:.02em;
+}
+.action-btn:hover{border-color:var(--bm);background:var(--bg3)}
+.action-btn:active{transform:scale(0.98)}
+.action-btn.primary{
+  border-color:rgba(106,168,255,0.35);
+  background:rgba(106,168,255,0.07);
+  color:var(--accent);
+}
+.action-btn.primary:hover{border-color:rgba(106,168,255,0.5);background:rgba(106,168,255,0.12)}
+.action-btn.critical{
+  border-color:rgba(224,155,38,0.35);
+  background:rgba(224,155,38,0.06);
+  color:var(--warn);
+}
+.action-btn.critical:hover{border-color:rgba(224,155,38,0.5);background:rgba(224,155,38,0.1)}
+
+/* ── BOTTOM BAR ── */
+.bottom-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:7px 16px;
+  border-top:0.5px solid var(--b);
+  background:var(--bg2);
+  flex-shrink:0;
+}
+.bottom-meta{font-size:9px;font-family:var(--mono);color:var(--faint);letter-spacing:.05em}
+.bottom-meta span{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <!-- ── SIDEBAR ── -->
+  <div class="sidebar">
+    <div class="sb-logo">
+      <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="5" height="5" rx="1" fill="var(--accent)" opacity=".9"/>
+        <rect x="8" y="1" width="5" height="5" rx="1" fill="var(--faint)"/>
+        <rect x="1" y="8" width="5" height="5" rx="1" fill="var(--faint)"/>
+        <rect x="8" y="8" width="5" height="5" rx="1" fill="var(--faint)" opacity=".5"/>
+      </svg>
+    </div>
+    <div class="sb-item active" title="Simulation"><i class="ti ti-chart-treemap"></i></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item" title="Intelligence">
+      <i class="ti ti-brain"></i>
+      <div class="sb-pip"></div>
+    </div>
+    <div class="sb-item" title="Scenarios"><i class="ti ti-git-branch"></i></div>
+    <div class="sb-item" title="Data Sources"><i class="ti ti-database"></i></div>
+    <div class="sb-item" title="Reports"><i class="ti ti-file-analytics"></i></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item" title="Alerts">
+      <i class="ti ti-bell"></i>
+      <div class="sb-pip" style="background:var(--danger)"></div>
+    </div>
+    <div class="sb-item" title="Audit Log"><i class="ti ti-list-check"></i></div>
+    <div class="sb-bottom">
+      <div class="sb-sep"></div>
+      <div class="sb-item" title="Settings"><i class="ti ti-settings"></i></div>
+      <div class="sb-item" title="User"><i class="ti ti-user-circle"></i></div>
+    </div>
+  </div>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="content">
+
+    <!-- ── ALERT STRIP ── -->
+    <div class="alert-strip">
+      <div class="alert-item">
+        <div class="alert-dot" style="background:var(--danger)"></div>
+        <span class="alert-label">CRITICAL</span>
+        <span class="alert-val" style="color:var(--danger)">Tier-1 supplier offline — APAC region</span>
+      </div>
+      <div class="alert-item">
+        <div class="alert-dot" style="background:var(--warn);animation:pulse 2s ease-in-out infinite"></div>
+        <span class="alert-label">WATCH</span>
+        <span class="alert-val" style="color:var(--warn)">FX volatility +1.4σ above 30d avg</span>
+      </div>
+      <div class="alert-item">
+        <div class="alert-dot" style="background:var(--success)"></div>
+        <span class="alert-label">CLEAR</span>
+        <span class="alert-val" style="color:var(--success)">Regulatory review — EU 2023/1542</span>
+      </div>
+      <div class="alert-strip-ticker">
+        <div class="ticker-inner" id="ticker"></div>
+      </div>
+    </div>
+
+    <!-- ── SCROLL AREA ── -->
+    <div class="scroll-area">
+
+      <!-- HEADER -->
+      <div class="header-strip">
+        <div>
+          <div class="sys-label">Enterprise Intelligence Platform — v4.2 · Session 08E4A</div>
+          <div class="sys-title">Strategic Simulation Console</div>
+        </div>
+        <div class="header-right">
+          <div class="model-tag">GPT-ENT · HORIZON-7B</div>
+          <div class="live-badge"><div class="live-dot"></div>LIVE MODEL</div>
+        </div>
+      </div>
+
+      <!-- AI ORCHESTRATION STATUS -->
+      <div class="orch-panel">
+        <div class="orch-label">AI Agents</div>
+        <div class="orch-agents">
+          <div class="agent-cell"><div class="agent-status agent-busy"></div><span class="agent-name">RISK-SIM</span></div>
+          <div class="agent-cell"><div class="agent-status agent-ok"></div><span class="agent-name">MACRO-INTEL</span></div>
+          <div class="agent-cell"><div class="agent-status agent-busy"></div><span class="agent-name">SCENARIO-GEN</span></div>
+          <div class="agent-cell"><div class="agent-status agent-warn"></div><span class="agent-name">SUPPLY-WATCH</span></div>
+          <div class="agent-cell"><div class="agent-status agent-ok"></div><span class="agent-name">FX-HEDGE</span></div>
+          <div class="agent-cell"><div class="agent-status agent-idle"></div><span class="agent-name">LEGAL-SCAN</span></div>
+          <div class="agent-cell"><div class="agent-status agent-busy"></div><span class="agent-name">SENTIMENT</span></div>
+        </div>
+        <div class="orch-right"><span class="orch-count">4</span> / 7 active · last inference <span id="orch-tick">--ms</span></div>
+      </div>
+
+      <!-- SCENARIO TABS -->
+      <div class="scenario-tabs">
+        <div class="tab active" onclick="setScenario(0,this)">
+          <div class="tab-label">Supplier disruption</div>
+          <div class="tab-delta">−$84M ARR risk</div>
+          <div class="tab-indicator"><div class="tab-indicator-fill" style="width:88%;background:var(--danger)"></div></div>
+        </div>
+        <div class="tab" onclick="setScenario(1,this)">
+          <div class="tab-label">Pricing increase</div>
+          <div class="tab-delta">+$47M ARR upside</div>
+          <div class="tab-indicator"><div class="tab-indicator-fill" style="width:84%;background:var(--success)"></div></div>
+        </div>
+        <div class="tab" onclick="setScenario(2,this)">
+          <div class="tab-label">Market expansion</div>
+          <div class="tab-delta">+$130M TAM unlock</div>
+          <div class="tab-indicator"><div class="tab-indicator-fill" style="width:61%;background:var(--accent)"></div></div>
+        </div>
+        <div class="tab" onclick="setScenario(3,this)">
+          <div class="tab-label">Workforce reduction</div>
+          <div class="tab-delta">−$28M OpEx</div>
+          <div class="tab-indicator"><div class="tab-indicator-fill" style="width:71%;background:var(--warn)"></div></div>
+        </div>
+      </div>
+
+      <!-- MAIN GRID: 3 cols -->
+      <div class="main-grid">
+        <!-- Forecast Confidence -->
+        <div class="panel">
+          <div class="panel-title">
+            Forecast confidence
+            <span id="conf-updated" style="color:var(--faint);font-size:9px">updated 0s ago</span>
+          </div>
+          <div class="confidence-ring-wrap">
+            <svg width="68" height="68" viewBox="0 0 68 68">
+              <circle cx="34" cy="34" r="27" fill="none" stroke="var(--bg4)" stroke-width="5"/>
+              <circle cx="34" cy="34" r="27" fill="none" stroke="var(--bg5)" stroke-width="1" stroke-dasharray="2 4"/>
+              <circle id="conf-arc" cx="34" cy="34" r="27" fill="none" stroke-width="5"
+                stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="42"
+                transform="rotate(-90 34 34)"
+                style="transition:stroke-dashoffset .6s ease;stroke:var(--warn)"/>
+            </svg>
+            <div>
+              <div class="conf-score" id="conf-score">75%</div>
+              <div class="conf-label">Model confidence</div>
+              <div class="conf-tier" id="conf-tier" style="color:var(--warn)">MODERATE</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Revenue Impact -->
+        <div class="panel">
+          <div class="panel-title">Revenue impact</div>
+          <div class="impact-rows" id="impact-rows"></div>
+        </div>
+
+        <!-- Live Signal Surface -->
+        <div class="panel">
+          <div class="panel-title">Live signal surface</div>
+          <div class="signal-panel" id="signal-panel"></div>
+        </div>
+      </div>
+
+      <!-- RISK SURFACE -->
+      <div class="risk-panel">
+        <div class="panel-title">
+          Operational risk surface
+          <span style="font-size:9px;color:var(--faint);font-family:var(--mono)">6 VECTORS · LIVE SCORING</span>
+        </div>
+        <div class="risk-grid" id="risk-grid"></div>
+      </div>
+
+      <!-- TIMELINE -->
+      <div class="timeline-panel">
+        <div class="panel-title">
+          Revenue trajectory — 4-quarter horizon
+          <span style="font-size:9px;color:var(--faint);font-family:var(--mono)">VOL OVERLAY: ON · ±1σ</span>
+        </div>
+        <svg class="timeline-svg" viewBox="0 0 800 175" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="vol-fill-bull" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(45,179,104,0.12)"/>
+              <stop offset="100%" stop-color="rgba(45,179,104,0)"/>
+            </linearGradient>
+            <linearGradient id="vol-fill-bear" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(217,79,58,0)"/>
+              <stop offset="100%" stop-color="rgba(217,79,58,0.1)"/>
+            </linearGradient>
+          </defs>
+          <!-- axis -->
+          <line x1="56" y1="144" x2="780" y2="144" stroke="var(--b)" stroke-width="0.5"/>
+          <line x1="56" y1="20" x2="56" y2="148" stroke="var(--b)" stroke-width="0.5"/>
+          <!-- gridlines -->
+          <line x1="56" y1="94" x2="780" y2="94" stroke="var(--b)" stroke-width="0.5" stroke-dasharray="2 5"/>
+          <line x1="56" y1="58" x2="780" y2="58" stroke="rgba(255,255,255,0.025)" stroke-width="0.5" stroke-dasharray="2 5"/>
+          <line x1="56" y1="130" x2="780" y2="130" stroke="rgba(255,255,255,0.025)" stroke-width="0.5" stroke-dasharray="2 5"/>
+          <!-- quarter verticals -->
+          <line x1="225" y1="20" x2="225" y2="144" stroke="var(--b)" stroke-width="0.5" stroke-dasharray="1 6"/>
+          <line x1="394" y1="20" x2="394" y2="144" stroke="var(--b)" stroke-width="0.5" stroke-dasharray="1 6"/>
+          <line x1="563" y1="20" x2="563" y2="144" stroke="var(--b)" stroke-width="0.5" stroke-dasharray="1 6"/>
+          <line x1="732" y1="20" x2="732" y2="144" stroke="var(--b)" stroke-width="0.5" stroke-dasharray="1 6"/>
+          <!-- axis labels -->
+          <text x="50" y="148" text-anchor="end" font-size="9" fill="var(--faint)" font-family="IBM Plex Mono,monospace">0</text>
+          <text x="50" y="97" text-anchor="end" font-size="9" fill="var(--faint)" font-family="IBM Plex Mono,monospace">50M</text>
+          <text x="50" y="24" text-anchor="end" font-size="9" fill="var(--faint)" font-family="IBM Plex Mono,monospace">100M</text>
+          <text x="225" y="160" text-anchor="middle" font-size="9" fill="var(--faint)" font-family="IBM Plex Mono,monospace">Q3</text>
+          <text x="394" y="160" text-anchor="middle" font-size="9" fill="var(--faint)" font-family="IBM Plex Mono,monospace">Q4</text>
+          <text x="563" y="160" text-anchor="middle" font-size="9" fill="var(--faint)" font-family="IBM Plex Mono,monospace">Q1+1</text>
+          <text x="732" y="160" text-anchor="middle" font-size="9" fill="var(--faint)" font-family="IBM Plex Mono,monospace">Q2+1</text>
+          <!-- volatility bands -->
+          <path id="tl-vol-bull" fill="url(#vol-fill-bull)" stroke="none" opacity="0.8"/>
+          <path id="tl-vol-bear" fill="url(#vol-fill-bear)" stroke="none" opacity="0.8"/>
+          <!-- scenario lines -->
+          <path id="tl-bull" fill="none" stroke="var(--success)" stroke-width="1.25" stroke-dasharray="4 3" opacity="0.65"/>
+          <path id="tl-base" fill="none" stroke="var(--warn)" stroke-width="2"/>
+          <path id="tl-bear" fill="none" stroke="var(--danger)" stroke-width="1.25" stroke-dasharray="3 3" opacity="0.65"/>
+          <!-- NOW marker -->
+          <circle cx="56" cy="94" r="3.5" fill="var(--accent)"/>
+          <line x1="56" y1="20" x2="56" y2="93" stroke="var(--accent)" stroke-width="0.5" stroke-dasharray="2 3" opacity="0.4"/>
+          <text x="66" y="91" font-size="9" fill="var(--accent)" font-family="IBM Plex Mono,monospace">NOW</text>
+          <!-- legend -->
+          <line x1="640" y1="14" x2="656" y2="14" stroke="var(--success)" stroke-width="1.25" stroke-dasharray="4 3"/>
+          <text x="660" y="17" font-size="9" fill="var(--success)" font-family="IBM Plex Mono,monospace">bull</text>
+          <line x1="684" y1="14" x2="700" y2="14" stroke="var(--warn)" stroke-width="2"/>
+          <text x="704" y="17" font-size="9" fill="var(--warn)" font-family="IBM Plex Mono,monospace">base</text>
+          <line x1="728" y1="14" x2="744" y2="14" stroke="var(--danger)" stroke-width="1.25" stroke-dasharray="3 3"/>
+          <text x="748" y="17" font-size="9" fill="var(--danger)" font-family="IBM Plex Mono,monospace">bear</text>
+        </svg>
+      </div>
+
+      <!-- AI + COMPARE row -->
+      <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:10px">
+        <div class="ai-panel">
+          <div class="ai-header">
+            <i class="ti ti-circuit-cell" style="font-size:14px;color:var(--accent)"></i>
+            <span style="font-size:12px;font-weight:700;color:var(--ink)">AI reasoning summary</span>
+            <div class="ai-badge">REASONING ENGINE</div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:4px;font-size:9px;font-family:var(--mono);color:var(--faint)">
+              <div class="live-dot" style="width:4px;height:4px;background:var(--accent)"></div>INFERRING
+            </div>
+          </div>
+          <div class="ai-text" id="ai-text"></div>
+          <div class="ai-reasoning-steps" id="ai-steps"></div>
+        </div>
+        <div class="compare-panel">
+          <div class="panel-title">Cross-scenario comparison</div>
+          <table class="compare-table">
+            <thead>
+              <tr><th>Scenario</th><th>Rev</th><th>T/F</th><th>Conf</th><th>Rec</th></tr>
+            </thead>
+            <tbody id="compare-body">
+              <tr class="highlight-row"><td>Supplier disruption</td><td><span class="chip chip-down">−$42M EV</span></td><td>60–90d</td><td><span class="chip chip-warn">75%</span></td><td><span class="chip chip-neutral">Mitigate</span></td></tr>
+              <tr><td>Pricing increase</td><td><span class="chip chip-up">+$47M</span></td><td>30d</td><td><span class="chip chip-up">84%</span></td><td><span class="chip chip-up">Execute</span></td></tr>
+              <tr><td>Market expansion</td><td><span class="chip chip-up">+$130M TAM</span></td><td>18–24mo</td><td><span class="chip chip-warn">61%</span></td><td><span class="chip chip-warn">Stage-gate</span></td></tr>
+              <tr><td>Workforce reduction</td><td><span class="chip chip-down">−$28M OpEx</span></td><td>90d</td><td><span class="chip chip-warn">71%</span></td><td><span class="chip chip-down">Caution</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- FOOTER BUTTONS -->
+      <div class="footer-row">
+        <button class="action-btn" onclick="alert('Connect to your AI backend to drill into this scenario.')">
+          <i class="ti ti-search" style="font-size:11px;margin-right:4px"></i>Drill into scenario
+        </button>
+        <button class="action-btn" onclick="alert('Connect to your AI backend to compare scenarios.')">
+          <i class="ti ti-git-merge" style="font-size:11px;margin-right:4px"></i>Compare top two
+        </button>
+        <button class="action-btn critical" onclick="alert('Escalating to war-room protocol.')">
+          <i class="ti ti-alert-triangle" style="font-size:11px;margin-right:4px"></i>Escalate to war-room
+        </button>
+        <button class="action-btn primary" onclick="alert('Connect to your AI backend to generate a board memo.')">
+          <i class="ti ti-file-text" style="font-size:11px;margin-right:4px"></i>Generate board memo ↗
+        </button>
+      </div>
+
+    </div><!-- /scroll-area -->
+
+    <!-- BOTTOM STATUS BAR -->
+    <div class="bottom-bar">
+      <div class="bottom-meta">Data vintage: <span>T−4h</span> · Last model run: <span id="last-run">--:--:--</span> · Scenarios: <span>4 active</span></div>
+      <div class="bottom-meta">Powered by Horizon Analytics · <span>CONFIDENTIAL — BOARD USE ONLY</span></div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /frame -->
+
+<script>
+const scenarios=[
+  {
+    conf:75,tier:"MODERATE",tierColor:"var(--warn)",arcStroke:"var(--warn)",
+    impacts:[
+      ["Base case","−$31M",72,"rgba(46,204,113,.75)"],
+      ["Bull case","−$14M",44,"rgba(106,168,255,.75)"],
+      ["Bear case","−$84M",90,"rgba(217,79,58,.75)"],
+      ["EV-weighted","−$42M",60,"rgba(224,155,38,.8)"]
+    ],
+    signals:[
+      ["Macro pressure",82,"var(--danger)"],
+      ["Order book vis.",38,"var(--warn)"],
+      ["Alt-supplier rdns.",55,"var(--accent)"],
+      ["Hedge coverage",67,"var(--success)"]
+    ],
+    risks:[
+      ["ti-alert-triangle","Supply chain","Critical",88,"var(--danger)"],
+      ["ti-users","Customer churn","Elevated",61,"var(--warn)"],
+      ["ti-scale","Regulatory","Low",18,"var(--success)"],
+      ["ti-building-bank","Liquidity","Moderate",44,"var(--warn)"],
+      ["ti-world","Geopolitical","High",74,"var(--danger)"],
+      ["ti-cpu","Operational","Contained",28,"var(--success)"]
+    ],
+    ai:"Primary disruption vector is single-source dependency on Tier 1 supplier (APAC region). Historical analogs suggest 60–90 day resolution window with 3 probable intervention paths. Recommend immediate dual-source qualification while activating buffer inventory protocol.",
+    steps:[
+      "Cross-referenced 14 historical supply disruption events (2008–2024) for pattern matching",
+      "Monte Carlo simulation: 10,000 runs across 6 macro scenarios with correlated variables",
+      "Flagged regulatory constraint in EU Directive 2023/1542 as binding on mitigation path C",
+      "Confidence penalized 12pts for insufficient forward order book visibility beyond Q4"
+    ],
+    tlBull:"M56,94 C126,86 206,76 326,66 S496,56 776,42",
+    tlBase:"M56,94 C126,102 216,114 336,122 S506,128 776,126",
+    tlBear:"M56,94 C106,118 176,138 316,142 S496,144 776,144",
+    tlVolBull:"M56,94 C126,80 206,68 326,56 S496,44 776,30 L776,54 C496,68 326,76 206,84 C126,92 56,94 56,94Z",
+    tlVolBear:"M56,94 C106,124 176,144 316,146 S496,146 776,146 L776,142 C496,140 316,138 176,132 C106,112 56,94 56,94Z"
+  },
+  {
+    conf:84,tier:"HIGH",tierColor:"var(--success)",arcStroke:"var(--success)",
+    impacts:[
+      ["Gross margin δ","+$47M",68,"rgba(46,204,113,.75)"],
+      ["Churn risk","−$8M",20,"rgba(217,79,58,.75)"],
+      ["Net rev impact","+$39M",55,"rgba(46,204,113,.75)"],
+      ["Payback period","4.2 mo",40,"rgba(106,168,255,.75)"]
+    ],
+    signals:[
+      ["Price elasticity",48,"var(--warn)"],
+      ["Churn probability",22,"var(--success)"],
+      ["Competitive resp.",61,"var(--warn)"],
+      ["Enterprise readns.",84,"var(--success)"]
+    ],
+    risks:[
+      ["ti-chart-line","Price elasticity","Moderate",48,"var(--warn)"],
+      ["ti-trophy","Competitive resp.","Elevated",62,"var(--warn)"],
+      ["ti-scale","Regulatory","Low",12,"var(--success)"],
+      ["ti-star","Brand perception","Low",22,"var(--success)"],
+      ["ti-mood-smile","Customer sat.","Elevated",66,"var(--warn)"],
+      ["ti-cpu","Operational","Minimal",10,"var(--success)"]
+    ],
+    ai:"Segmentation model identifies three distinct price-sensitivity cohorts. SMB segment shows 2.3x higher churn elasticity vs enterprise. Recommend tiered rollout: enterprise tier first (85%+ confidence), SMB tier deferred 60 days pending retention data.",
+    steps:[
+      "Analyzed 230,000 customer contract records for price-elasticity signals",
+      "Benchmarked 6 comparable SaaS pricing actions (2020–2024) for churn outcomes",
+      "Segmented cohorts by ACV, tenure, and product adoption depth",
+      "Identified 18% of SMB cohort as flight-risk — flagged for proactive CSM intervention"
+    ],
+    tlBull:"M56,94 C106,80 206,64 346,50 S516,38 776,26",
+    tlBase:"M56,94 C116,86 226,74 356,64 S526,54 776,46",
+    tlBear:"M56,94 C116,92 246,88 366,88 S526,92 776,100",
+    tlVolBull:"M56,94 C106,74 206,56 346,40 S516,26 776,14 L776,36 C516,50 346,60 206,72 C106,86 56,94 56,94Z",
+    tlVolBear:"M56,94 C116,96 246,94 366,94 S526,98 776,106 L776,94 C526,86 366,82 246,82 C116,78 56,94 56,94Z"
+  },
+  {
+    conf:61,tier:"LOW",tierColor:"var(--danger)",arcStroke:"var(--danger)",
+    impacts:[
+      ["TAM unlock","+$130M",88,"rgba(46,204,113,.75)"],
+      ["Entry cost","−$45M",60,"rgba(217,79,58,.75)"],
+      ["Break-even","Month 22",50,"rgba(224,155,38,.8)"],
+      ["IRR (5yr)","31%",72,"rgba(46,204,113,.75)"]
+    ],
+    signals:[
+      ["Market friction",78,"var(--danger)"],
+      ["Partner density",54,"var(--warn)"],
+      ["Regulatory score",48,"var(--warn)"],
+      ["Talent premium",70,"var(--danger)"]
+    ],
+    risks:[
+      ["ti-map","Market entry","High",78,"var(--danger)"],
+      ["ti-scale","Regulatory","Moderate",52,"var(--warn)"],
+      ["ti-users","Talent","High",70,"var(--danger)"],
+      ["ti-star","Brand","Low",20,"var(--success)"],
+      ["ti-currency-dollar","FX exposure","Elevated",60,"var(--warn)"],
+      ["ti-rocket","Execution","High",80,"var(--danger)"]
+    ],
+    ai:"DACH and Nordics represent lowest-friction entry with existing partner network leverage. SEA expansion carries 3.2x higher regulatory complexity and talent acquisition cost. Stage-gate approach recommended: DACH pilot → data collection → full EMEA decision at month 9.",
+    steps:[
+      "Modeled 8 geographic entry sequences using partner density and ICP concentration data",
+      "Ran regulatory mapping across 14 jurisdictions — 4 flagged as high-friction",
+      "Estimated talent acquisition premium vs domestic baseline for each region",
+      "Confidence bounded at 61% due to limited comparable cohort data post-2022 macro shift"
+    ],
+    tlBull:"M56,94 C116,90 226,84 366,72 S536,50 776,34",
+    tlBase:"M56,94 C146,94 276,96 396,92 S556,76 776,60",
+    tlBear:"M56,94 C136,100 256,112 386,124 S546,132 776,138",
+    tlVolBull:"M56,94 C116,84 226,76 366,62 S536,38 776,22 L776,46 C536,62 366,82 226,92 C116,96 56,94 56,94Z",
+    tlVolBear:"M56,94 C136,104 256,118 386,130 S546,138 776,146 L776,130 C546,126 386,118 256,106 C136,96 56,94 56,94Z"
+  },
+  {
+    conf:71,tier:"MODERATE",tierColor:"var(--warn)",arcStroke:"var(--warn)",
+    impacts:[
+      ["OpEx savings","−$28M",62,"rgba(46,204,113,.75)"],
+      ["Severance cost","−$6M",22,"rgba(217,79,58,.75)"],
+      ["Productivity δ","−12%",50,"rgba(224,155,38,.8)"],
+      ["Net 12-mo","−$22M",48,"rgba(46,204,113,.75)"]
+    ],
+    signals:[
+      ["Talent retention",86,"var(--danger)"],
+      ["Culture index",74,"var(--danger)"],
+      ["Exec alignment",58,"var(--warn)"],
+      ["Legal exposure",42,"var(--warn)"]
+    ],
+    risks:[
+      ["ti-users","Talent retention","Critical",86,"var(--danger)"],
+      ["ti-heart","Culture","High",74,"var(--danger)"],
+      ["ti-rocket","Execution","Moderate",46,"var(--warn)"],
+      ["ti-scale","Regulatory","Moderate",42,"var(--warn)"],
+      ["ti-building-store","Customer impact","Low",24,"var(--success)"],
+      ["ti-refresh","Rebound hiring","Elevated",58,"var(--warn)"]
+    ],
+    ai:"Role-level analysis surfaces 340 positions with under 60% utilization score across 6 months. Engineering and G&A carry highest redundancy concentration. WARN Act obligations triggered in 3 US states. Recommend phased approach to preserve institutional knowledge and avoid single-event cultural shock.",
+    steps:[
+      "Analyzed productivity and utilization signals across 1,200 roles over 6 months",
+      "Modeled morale and attrition cascades using post-RIF sentiment data from comparable events",
+      "Flagged WARN Act thresholds in CA, NY, and WA — legal review required before announcement",
+      "Scenario confidence penalized for incomplete high-performer attrition probability spans"
+    ],
+    tlBull:"M56,94 C96,86 186,76 306,70 S486,64 776,58",
+    tlBase:"M56,94 C96,92 186,94 306,98 S486,102 776,108",
+    tlBear:"M56,94 C96,100 186,114 306,126 S486,134 776,140",
+    tlVolBull:"M56,94 C96,80 186,68 306,60 S486,52 776,46 L776,70 C486,76 306,80 186,84 C96,92 56,94 56,94Z",
+    tlVolBear:"M56,94 C96,106 186,120 306,132 S486,140 776,146 L776,134 C486,128 306,120 186,108 C96,94 56,94 56,94Z"
+  }
+];
+
+function setScenario(idx, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const s=scenarios[idx];
+  const circ=2*Math.PI*27;
+  const arc=document.getElementById('conf-arc');
+  arc.style.strokeDashoffset=(circ*(1-s.conf/100)).toFixed(1);
+  arc.style.stroke=s.arcStroke;
+  document.getElementById('conf-score').textContent=s.conf+'%';
+  const tier=document.getElementById('conf-tier');
+  tier.textContent=s.tier;
+  tier.style.color=s.tierColor;
+
+  document.getElementById('impact-rows').innerHTML=s.impacts.map(([k,v,w,c])=>
+    `<div class="impact-row">
+      <div class="impact-key">${k}</div>
+      <div class="impact-bar-bg"><div class="impact-bar" style="width:${w}%;background:${c}"></div></div>
+      <div class="impact-val" style="color:${c}">${v}</div>
+    </div>`
+  ).join('');
+
+  document.getElementById('signal-panel').innerHTML=s.signals.map(([k,w,c])=>
+    `<div class="sig-row">
+      <div class="sig-key">${k}</div>
+      <div class="sig-bar-wrap"><div class="sig-bar" style="width:${w}%;background:${c}"></div></div>
+      <div class="sig-val" style="color:${c}">${w}</div>
+    </div>`
+  ).join('');
+
+  document.getElementById('risk-grid').innerHTML=s.risks.map(([icon,n,v,w,c])=>
+    `<div class="risk-cell">
+      <div class="risk-icon"><i class="ti ${icon}"></i></div>
+      <div class="risk-name">${n}</div>
+      <div class="risk-val" style="color:${c}">${v}</div>
+      <div class="risk-bar-bg"><div class="risk-bar" style="width:${w}%;background:${c};opacity:.65"></div></div>
+    </div>`
+  ).join('');
+
+  document.getElementById('tl-bull').setAttribute('d',s.tlBull);
+  document.getElementById('tl-base').setAttribute('d',s.tlBase);
+  document.getElementById('tl-bear').setAttribute('d',s.tlBear);
+  document.getElementById('tl-vol-bull').setAttribute('d',s.tlVolBull);
+  document.getElementById('tl-vol-bear').setAttribute('d',s.tlVolBear);
+
+  document.getElementById('ai-text').textContent=s.ai;
+  document.getElementById('ai-steps').innerHTML=s.steps.map(st=>
+    `<div class="reasoning-step"><div class="reasoning-dot"></div><span>${st}</span></div>`
+  ).join('');
+
+  document.querySelectorAll('#compare-body tr').forEach((tr,i)=>tr.classList.toggle('highlight-row',i===idx));
+}
+
+/* ── TICKER ── */
+const ticks=[
+  "S&P 500  5,421.7  −0.34%","NASDAQ  17,332.1  −0.61%","EUR/USD  1.0824  +0.12%",
+  "WTI Crude  79.42  +1.8%","10Y UST  4.41%  +2bp","VIX  18.3  +0.9",
+  "APAC PMI  47.2  ↓","EU CPI  2.9%  steady","Brent  83.11  +1.4%",
+  "Gold  2,331  +0.3%","USD/CNH  7.244  −0.08%","Baltic Dry  2,104  −0.7%",
+  "S&P 500  5,421.7  −0.34%","NASDAQ  17,332.1  −0.61%","EUR/USD  1.0824  +0.12%",
+  "WTI Crude  79.42  +1.8%","10Y UST  4.41%  +2bp","VIX  18.3  +0.9",
+  "APAC PMI  47.2  ↓","EU CPI  2.9%  steady","Brent  83.11  +1.4%",
+  "Gold  2,331  +0.3%","USD/CNH  7.244  −0.08%","Baltic Dry  2,104  −0.7%"
+];
+document.getElementById('ticker').innerHTML=ticks.map(t=>
+  `<span style="padding:0 18px;border-right:0.5px solid var(--b)">${t}</span>`
+).join('');
+
+/* ── LIVE CLOCK ── */
+function updateClock(){
+  document.getElementById('last-run').textContent=new Date().toTimeString().slice(0,8);
+}
+setInterval(updateClock,1000);updateClock();
+
+/* ── ORCH INFERENCE LATENCY MOCK ── */
+function updateOrch(){
+  document.getElementById('orch-tick').textContent=(Math.floor(Math.random()*120+40))+'ms';
+}
+setInterval(updateOrch,2800);updateOrch();
+
+/* ── CONF STALENESS COUNTER ── */
+let confSec=0;
+setInterval(()=>{
+  confSec++;
+  document.getElementById('conf-updated').textContent='updated '+confSec+'s ago';
+},1000);
+
+/* ── INIT ── */
+setScenario(0,document.querySelector('.tab'));
+</script>
+</body>
+</html>
